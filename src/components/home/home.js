@@ -14,7 +14,7 @@ import Scheduled from "../appointments/scheduled";
 import Events from "../events/events";
 import Tracking from "../tracking/tracking";
 import Reports from "../reports/reports";
-import Badge from "react-bootstrap/badge";
+import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/esm/Button";
 import useRemoteNotifications from "../functions/useRemoteNotifications";
 import axios from "../../requestHandler";

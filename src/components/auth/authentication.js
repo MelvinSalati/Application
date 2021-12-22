@@ -57,7 +57,7 @@ const Authentication = () => {
               />
             </svg>
             {"  "}
-            Appointment Management System
+            <strong>Appointment Management System</strong>
           </Navbar.Brand>
         </Container>
       </Navbar>
