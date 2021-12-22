@@ -28,6 +28,7 @@ const Authentication = () => {
       sessionStorage.setItem("first_name", request.data.first_name);
       sessionStorage.setItem("last_name", request.data.last_name);
       sessionStorage.setItem("id", request.data.id);
+      sessionStorage.setItem("phone", request.data.phone);
     } else if (request.data.status === 401) {
       Swal.fire({
         text: request.data.message,
