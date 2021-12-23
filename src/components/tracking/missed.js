@@ -96,15 +96,18 @@ const MissedAppointments = () => {
     getMissedAppointments();
   }, []);
 
-  useEffect(() => {
-    async function getTrackingHistory() {
-      const request = await axios.get(
-        `api/v1/facility/tracking/${recipientUuid}/${appointmentID}`
-      );
-      setTrackingHx(request.data.appointments);
-    }
-    getTrackingHistory();
-  }, [recipientUuid, appointmentID]);
+  useEffect(
+    (recipientUuid) => {
+      async function getTrackingHistory() {
+        const request = await axios.get(
+          `api/v1/facility/tracking/${recipientUuid}/${appointmentID}`
+        );
+        setTrackingHx(request.data.appointments);
+      }
+      getTrackingHistory();
+    },
+    [recipientUuid, appointmentID]
+  );
 
   // buttons
   const tableBtns = (props) => {

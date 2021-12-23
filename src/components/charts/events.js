@@ -79,13 +79,13 @@ const BarChart = () => {
     },
   });
 
-  const updateData = (chart, label, data) => {
-    chart.data.labels.push(label);
-    chart.data.datasets.forEach((dataset) => {
-      dataset.data.push(data);
-    });
-    chart.update();
-  };
+  // const updateData = (chart, label, data) => {
+  //   chart.data.labels.push(label);
+  //   chart.data.datasets.forEach((dataset) => {
+  //     dataset.data.push(data);
+  //   });
+  //   chart.update();
+  // };
 
   useEffect(() => {
     async function getWeeklyData() {
@@ -107,7 +107,7 @@ const BarChart = () => {
     }
     getWeeklyData();
     return () => {
-      updateData();
+      // updateData();
     };
   }, []);
   return (

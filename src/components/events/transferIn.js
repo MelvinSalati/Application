@@ -20,16 +20,21 @@ const TransferIn = () => {
   const [pharmacyHistory, setPharmacyHistory] = React.useState("");
   const [labHistory, setLabHistory] = React.useState("");
 
-  useEffect(() => {
-    async function appointmentHistory() {
-      const request = await axios.get(
-        `/api/v1/client/appointment/history/${clientUuid}`
-      );
-      setPharmacyHistory(request.data.pharmacy);
-      setLabHistory(request.data.lab);
-    }
-    appointmentHistory();
-  }, [clientUuid]);
+  useEffect(
+    (client_Uuid) => {
+      if (client_Uuid) {
+        async function appointmentHistory() {
+          const request = await axios.get(
+            `/api/v1/client/appointment/history/${clientUuid}`
+          );
+          setPharmacyHistory(request.data.pharmacy);
+          setLabHistory(request.data.lab);
+        }
+        appointmentHistory();
+      }
+    },
+    [clientUuid]
+  );
 
   const tableBtn = (props) => {
     return (

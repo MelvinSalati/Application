@@ -1,4 +1,3 @@
-import React from "react";
 import Container from "react-bootstrap/esm/Container";
 import Tabs from "react-bootstrap/esm/Tabs";
 import Tab from "react-bootstrap/esm/Tab";
@@ -9,12 +8,13 @@ import useCreated from "../functions/useCreated";
 import FilterableTable from "react-filterable-table";
 import FormControl from "react-bootstrap/FormControl";
 import Modal from "react-bootstrap/Modal";
+var React = require("react");
 // import useClinicians from "../functions/useClinician";
 // import useCommunity from "../functions/useCommunity";
 const Scheduled = () => {
   const [key, setKey] = React.useState("expected");
   const [createdToday, setCreatedToday] = useCreated([]);
-  console.log(createdToday);
+
   const [appointmentDate, setAppointmentDate] = React.useState("null");
   const [appointments, setAppointments] = useAppointmentsToday(appointmentDate);
 
@@ -91,10 +91,7 @@ const Scheduled = () => {
                 viewBox="0 0 16 16"
               >
                 <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-                <path
-                  fill-rule="evenodd"
-                  d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"
-                />
+                <path d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z" />
                 <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
               </svg>
               {"   "}
