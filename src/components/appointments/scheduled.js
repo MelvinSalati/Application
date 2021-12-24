@@ -1,19 +1,16 @@
 import Container from "react-bootstrap/esm/Container";
 import Tabs from "react-bootstrap/esm/Tabs";
 import Tab from "react-bootstrap/esm/Tab";
-import Button from "react-bootstrap/Button";
-import axios from "../../requestHandler";
 import useAppointmentsToday from "../functions/useAppointmentsToday";
 import useCreated from "../functions/useCreated";
 import FilterableTable from "react-filterable-table";
 import FormControl from "react-bootstrap/FormControl";
-import Modal from "react-bootstrap/Modal";
 var React = require("react");
 // import useClinicians from "../functions/useClinician";
 // import useCommunity from "../functions/useCommunity";
 const Scheduled = () => {
   const [key, setKey] = React.useState("expected");
-  const [createdToday, setCreatedToday] = useCreated([]);
+  const [createdToday, setCreatedToday] = useCreated();
 
   const [appointmentDate, setAppointmentDate] = React.useState("null");
   const [appointments, setAppointments] = useAppointmentsToday(appointmentDate);
