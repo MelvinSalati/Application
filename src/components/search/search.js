@@ -2407,6 +2407,7 @@ const Search = () => {
           <Button
             onClick={() => {
               addBaby();
+              setAddBabyModal(false);
               setCreateBabyAppointmentModal(false);
             }}
           >

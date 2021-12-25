@@ -31,11 +31,11 @@ const PatientLevel = () => {
 
       if (startD < endD) {
         window.open(
-          `http://127.0.0.1/umodzi/reports/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
+          `http://reports.v2.smart-umodzi.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
         );
       } else if (startD === endD) {
         window.open(
-          `http://127.0.0.1/umodzi/reports/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
+          `http://reports.v2.smart-umodzi.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
         );
       } else if (endD > today) {
         Swal.fire({
