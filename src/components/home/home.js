@@ -76,10 +76,13 @@ const Home = () => {
             onClick={() => {
               menu();
             }}
-            style={{ fontFamily: "Roboto", fontWeight: 700 }}
+            style={{ fontFamily: "Roboto", fontWeight: 800 }}
           >
             <img src={Icon} alt="" width={30} height={30} />
-            {"  "} <strong>{sessionStorage.getItem("name")}</strong>
+            {"  "}{" "}
+            <strong className="text-primary">
+              {sessionStorage.getItem("name")}
+            </strong>
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">

@@ -260,7 +260,7 @@ const Search = () => {
     const fac = sessionStorage.getItem("name");
     const hmis = sessionStorage.getItem("hmis");
     window.open(
-      `http://127.0.0.1/umodzi/reports/Card?hmis=${hmis}&name=${name}&nupn=${nupn}&art=${art}&fac=${fac}&fac_ph=${fac_phone}`
+      `https://card.v2.smart-umodzi.com?hmis=${hmis}&name=${name}&nupn=${nupn}&art=${art}&fac=${fac}&fac_ph=${fac_phone}`
     );
   };
   const [first, setFirst] = React.useState("null");
