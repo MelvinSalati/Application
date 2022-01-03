@@ -30,6 +30,7 @@ const Tasks = () => {
       async function tasks() {
         const request = await axios.get(`api/v1/facility/chw/tasks/${chwId}`);
         setTaskData(request.data.list);
+        alert(request);
       }
 
       tasks();
@@ -40,7 +41,7 @@ const Tasks = () => {
     if (!chwId) {
     } else {
       window.open(
-        `http://127.0.0.1/umodzi/reports/list.php?user_id=${chwId}&hmis=${hmis}`
+        `https://reports.v2.smart-umodzi.com/umodzi/reports/list.php?user_id=${chwId}&hmis=${hmis}`
       );
     }
   };

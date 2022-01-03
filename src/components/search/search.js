@@ -7,6 +7,7 @@ import FormControl from "react-bootstrap/FormControl";
 import Dropdown from "react-bootstrap/Dropdown";
 import Button from "react-bootstrap/Button";
 import axios from "../../requestHandler";
+import drugsEmtct from "../../requestEmtct";
 import FilterableTable from "react-filterable-table";
 import Modal from "react-bootstrap/Modal";
 import Avatar from "react-avatar";
@@ -22,6 +23,7 @@ import useFacility from "../functions/useFacility";
 import useDistrict from "../functions/useDistrict";
 import Status from "../functions/clientStatus";
 import chip from "./chip.svg";
+import useDrugs from "../functions/useDrugs";
 const containerStyle = {
   width: "100%",
   height: "5909",
@@ -363,6 +365,9 @@ const Search = () => {
   const [createBabyAppointmentModal, setCreateBabyAppointmentModal] =
     React.useState(false);
   const [babyID, setBabyID] = React.useState("");
+  const [babyKey, setBabyKey] = React.useState("pharmacy");
+  const [drugsList, setDrugsList] = React.useState([]);
+
   // create appointment modal for
   const [babyAppointment, setBabyAppointment] = React.useState("");
   const [babyTime, setBabyTime] = React.useState("");
@@ -488,7 +493,7 @@ const Search = () => {
               <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z" />
             </svg>
             {"  "}
-            Book Appointment
+            Create Interaction
           </Button>
         </ButtonGroup>
       </>
@@ -534,7 +539,8 @@ const Search = () => {
   // baby appointments
   const createBabyAppointment = async () => {
     const request = await axios.get(
-      `api/v1/baby/create/appointment/${clientUuid}/${babyAppointment}/${babyTime}/${babyDate}/${babyClinician}/${babyCommunity}/${babyID}`
+      `api/v1/baby/create/appointment/${clientUuid}/${weight}/
+      ${drugID}/${strength}/${drugFormulation}/${drugFrequency}/${drugDuration}/${babyAppointment}/${babyTime}/${drugPickUpDate}/${babyClinician}/${babyCommunity}/${babyID}`
     );
     if (request.status === 200) {
       Swal.fire({
@@ -560,6 +566,7 @@ const Search = () => {
   const [clinicianTransfer, setClinicianTransfer] = React.useState("");
   const [title, setTitle] = React.useState("");
   const [clinicianPhone, setClinicianPhone] = React.useState("");
+
   // const [facility, setFacility] = React.useState("");
 
   const btnTransfer = async () => {
@@ -588,18 +595,21 @@ const Search = () => {
     }
   };
   // baby data
-  useEffect(
-    (babyID) => {
-      if (babyID) {
-        async function getBabyAppointments() {
-          const request = await axios.get(`api/v1/baby/appointments/${babyID}`);
-          setViewBabyAppointment(request.data.appointments);
-        }
-        getBabyAppointments();
-      }
-    },
-    [babyID, clientUuid]
-  );
+
+  const [weight, setWeight] = React.useState([]);
+  const [drugPickUpDate, setDrugPickUpDate] = React.useState([]);
+  const [drugFormulation, setDrugFormulation] = React.useState([]);
+  const [drugFrequency, setDrugFrequency] = React.useState([]);
+  const [drugDuration, setDrugDuration] = React.useState([]);
+  const [umodziAI, setUmodziAI] = React.useState([]);
+
+  useEffect(() => {
+    async function getBabyAppointments() {
+      const request = await axios.get(`api/v1/baby/appointments/${babyID}`);
+      setViewBabyAppointment(request.data.appointments);
+    }
+    getBabyAppointments();
+  }, [babyID, clientUuid]);
 
   useEffect(() => {
     // baby appointments
@@ -873,7 +883,30 @@ const Search = () => {
       setConfirmNew(true);
     }
   };
-
+  //drugs
+  const [strength, setDrugStrength] = React.useState([]);
+  const [formulations, setFormulations] = React.useState([]);
+  const [drugID, setDrugID] = React.useState([]);
+  // const []
+  useEffect(() => {
+    async function getDrugs() {
+      const request = await drugsEmtct.get(`api/v1/drugs`);
+      setDrugsList(request.data.drug);
+    }
+    async function getStrengths() {
+      const request = await drugsEmtct.get(`api/v1/drugs/strength/${drugID}`);
+      setDrugStrength(request.data.strength);
+    }
+    async function getFormulations() {
+      const request = await drugsEmtct.get(
+        `api/v1/drugs/formulations/${drugID}`
+      );
+      setFormulations(request.data.formulations);
+    }
+    getDrugs();
+    getStrengths();
+    getFormulations();
+  }, [drugID]);
   return (
     <>
       <h4 className="text-secondary h5 component ">
@@ -2211,96 +2244,226 @@ const Search = () => {
         }}
       >
         <Modal.Header closeButton>
-          <h5>Create Appointment</h5>
+          <h5>Interaction</h5>
         </Modal.Header>
-        <Modal.Body className="bg-light">
-          <div className="row">
-            <div className="col-md-6">
-              <select
-                onChange={(e) => {
-                  setBabyAppointment(e.target.value);
-                }}
-                className="form-control"
-              >
-                <optgroup label="Baby Appointments">
-                  <option value="">Select Appointments</option>
-                  <option value="1">AZT+3TC+NVP</option>
-                  <option value="2">Co-trimoxazole</option>
-                  <option value="" disabled disabled></option>
-                  <option value="3">Serological Test</option>
-                  <option value="4">Nucleic Acid Testing</option>
-                </optgroup>
-              </select>
-            </div>
-            <div className="col-md-6">
-              <FormControl
-                onChange={(e) => {
-                  setBabyTime(e.target.value);
-                }}
-                type="time"
-              />
-              <br />
-            </div>
-            <div className="col-md-6"></div>
-            <div className="col-md-6">
-              <FormControl
-                onChange={(e) => {
-                  setBabyDate(e.target.value);
-                }}
-                type="date"
-              />
-              <br />
-            </div>
-            <div className="col-md-6"></div>
-            <div className="col-md-6">
-              <select
-                onChange={(e) => {
-                  setBabyClinician(e.target.value);
-                }}
-                className="form-control"
-              >
-                <optgroup label="Assignd Clinician">
-                  <option>Assign Clinician</option>
-                  {clinicians.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.first_name}
-                      {row.last_name}{" "}
-                    </option>
-                  ))}{" "}
-                </optgroup>
-              </select>
-              <br />
-            </div>
-            <div className="col-md-6"></div>
-            <div className="col-md-6">
-              <select
-                onChange={(e) => {
-                  setBabyCommunity(e.target.value);
-                }}
-                className="form-control"
-              >
-                <optgroup label="Assign Community">
-                  <option>Assign Community Volunteers</option>
-                  {community.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.first_name}
-                      {row.last_name}{" "}
-                    </option>
-                  ))}{" "}
-                </optgroup>
-              </select>
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            onClick={() => {
-              createBabyAppointment();
-              setCreateBabyAppointmentModal(false);
+        <Modal.Body style={{ padding: "0px" }} className="bg-white">
+          <Tabs
+            activeKey={babyKey}
+            onSelect={(k) => {
+              setBabyKey(k);
             }}
           >
-            Submit
-          </Button>
+            <Tab
+              eventKey="pharmacy"
+              className="bg-light"
+              title={<>Pharmacy Interaction</>}
+            >
+              <Container>
+                <h5 className="component">
+                  <i className="fas fa-pills"></i> Create a pharmacy interaction
+                </h5>
+                <div className="row">
+                  <div className="col-md-12">
+                    <FormControl
+                      onChange={(e) => {
+                        setWeight(e.target.value);
+                      }}
+                      placeholder="Weight"
+                    />
+                    <br />
+                  </div>
+                  <div className="col-md-6">
+                    <select
+                      onChange={(e) => {
+                        setDrugID(e.target.value);
+                      }}
+                      className="form-control"
+                    >
+                      <optgroup label="Drugs">
+                        <option value="">Select drugs</option>
+                        {drugsList.map((row) => (
+                          <option
+                            className="text-primary"
+                            key={row.id}
+                            value={row.id}
+                          >
+                            {row.generic_name}
+                            {"  ("}
+                            {row.Form}
+                            {")"}
+                          </option>
+                        ))}{" "}
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <select
+                      // onChange={(e) => {
+                      //   setDrugStrength(e.target.value);
+                      // }}
+                      className="form-control"
+                    >
+                      <optgroup label="Drugs">
+                        <option value="">Select strength</option>
+                        {strength.map((row) => (
+                          <option key={row.id} value={row.id}>
+                            {row.strength}
+                            {"  "}
+                            {row.Form}
+                          </option>
+                        ))}{" "}
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <br />
+                    <select
+                      onChange={(e) => {
+                        setDrugFormulation(e.target.value);
+                      }}
+                      className="form-control"
+                    >
+                      <optgroup label="Drugs">
+                        <option value="">Select Formulations</option>
+                        {formulations.map((row) => (
+                          <option key={row.id} value={row.id}>
+                            {row.Form}
+                          </option>
+                        ))}{" "}
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <br />
+                    <select
+                      onChange={(e) => {
+                        setDrugFrequency(e.target.value);
+                      }}
+                      className="form-control"
+                    >
+                      <optgroup label="Drugs">
+                        <option value="">Select Frequency</option>
+                        <option value="1">Once Per Day (OD)</option>
+                        <option value="2">Twice Per Day (BD)</option>
+                        <option value="3">Three Times Per Day (TDS)</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="col-md-12">
+                    <br />
+                    <FormControl
+                      onChange={(e) => {
+                        setDrugDuration(e.target.value);
+                      }}
+                      placeholder="Duration"
+                    />
+                  </div>
+                  <div className="col-md-12">
+                    <br />
+                    <FormControl
+                      onChange={(e) => {
+                        setDrugPickUpDate(e.target.value);
+                      }}
+                      placeholder="Duration"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <br />
+                    <select
+                      onChange={(e) => {
+                        setBabyCommunity(e.target.value);
+                      }}
+                      className="form-control"
+                    >
+                      <optgroup label="Assign Community">
+                        <option>Assign Community Volunteers</option>
+                        {community.map((row) => (
+                          <option key={row.id} value={row.id}>
+                            {row.first_name}
+                            {row.last_name}{" "}
+                          </option>
+                        ))}{" "}
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <br />
+                    <select
+                      onChange={(e) => {
+                        setBabyClinician(e.target.value);
+                      }}
+                      className="form-control"
+                    >
+                      <optgroup label="Assignd Clinician">
+                        <option>Assign Clinician</option>
+                        {clinicians.map((row) => (
+                          <option key={row.id} value={row.id}>
+                            {row.first_name}
+                            {row.last_name}{" "}
+                          </option>
+                        ))}{" "}
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="col-md-12">
+                    <br />
+                    <strong>
+                      <input
+                        onChange={(e) => {
+                          setUmodziAI(e.target.value);
+                        }}
+                        type="checkbox"
+                      />
+                      {"   "} Use Umodzi Artificial Intelligency
+                    </strong>
+                  </div>
+                </div>
+              </Container>
+            </Tab>
+            <Tab
+              eventKey="laboratory"
+              className="bg-light"
+              title={<>Laboratory</>}
+            >
+              <Container>
+                <h5 className="component">Laboratory Interaction</h5>
+                <div className="row">
+                  <div className="col-md-12">
+                    <select className="form-control">
+                      <optgroup label="Laboratory Investigations">
+                        <option value="">Select</option>
+                        <option value="1">Dry Blood Sample (DBS)</option>
+                        <option value="2">HIV RDT</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+              </Container>
+            </Tab>
+          </Tabs>
+        </Modal.Body>
+        <Modal.Footer className="bg-white" style={{ marginTop: "0px" }}>
+          <ButtonGroup className="btn-sm">
+            <Button
+              className="btn-sm"
+              variant="outline-primary"
+              onClick={() => {
+                setCreateBabyAppointmentModal(false);
+              }}
+            >
+              Close
+            </Button>
+
+            <Button
+              className="btn-sm"
+              onClick={() => {
+                createBabyAppointment();
+                setCreateBabyAppointmentModal(false);
+              }}
+            >
+              Submit
+            </Button>
+          </ButtonGroup>
         </Modal.Footer>
       </Modal>
       {/* view baby appointments */}
