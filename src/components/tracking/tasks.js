@@ -30,7 +30,6 @@ const Tasks = () => {
       async function tasks() {
         const request = await axios.get(`api/v1/facility/chw/tasks/${chwId}`);
         setTaskData(request.data.list);
-        alert(request);
       }
 
       tasks();

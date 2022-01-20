@@ -87,29 +87,27 @@ const MissedAppointments = () => {
   };
 
   useEffect(() => {
+    async function getTrackingHistory() {
+      setTrackingHx([]);
+      const request = await axios.get(
+        `api/v1/facility/tracking/${recipientUuid}/${appointmentID}`
+      );
+      setTrackingHx(request.data.appointments);
+    }
+    getTrackingHistory();
+  }, [recipientUuid, appointmentID]);
+
+  useEffect(() => {
     async function getMissedAppointments() {
       const request = await axios.get(
         `api/v1/facility/appointments/missed/${hmis}/1`
       );
       setAppointmentsList(request.data.appointments);
     }
+
     getMissedAppointments();
   }, []);
 
-  useEffect(
-    (recipientUuid) => {
-      async function getTrackingHistory() {
-        const request = await axios.get(
-          `api/v1/facility/tracking/${recipientUuid}/${appointmentID}`
-        );
-        setTrackingHx(request.data.appointments);
-      }
-      getTrackingHistory();
-    },
-    [recipientUuid, appointmentID]
-  );
-
-  // buttons
   const tableBtns = (props) => {
     return (
       <>
@@ -118,8 +116,8 @@ const MissedAppointments = () => {
             className="btn-sm"
             onClick={() => {
               setRecipientUuid(props.record.uuid);
-              setViewTrackingHistoryModal(true);
               setAppointmentID(props.record.id);
+              setViewTrackingHistoryModal(true);
             }}
           >
             <svg
@@ -379,10 +377,14 @@ const MissedAppointments = () => {
                 >
                   <optgroup label="Responses">
                     <option value="0">Select response</option>
-                    <option value="1">Has drugs</option>
+                    <option value="1">Picked drugs elsewhere (Clinic)</option>
                     <option value="2">Self transfer</option>
                     <option value="3">Admitted to Hospital</option>
                     <option value="4">Refused treatment</option>
+                    <option value="5">Phone off</option>
+                    <option value="6">Phone unreachable</option>
+                    <option value="7">Client has drugs</option>
+                    <option value="8">Got drugs from freind</option>
                   </optgroup>
                 </select>
               </div>
