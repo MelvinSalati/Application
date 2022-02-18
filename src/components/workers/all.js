@@ -309,7 +309,7 @@ const ShowAll = () => {
               <FormControl
                 type="password"
                 onChange={(e) => {
-                  setUPass(e.target.value);
+                  setPassword(e.target.value);
                 }}
                 placeholder="Password"
               />

@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import Container from "react-bootstrap/esm/Container";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
+import processBiometric from "../../processBiometric";
+import BiometricDevice from "../../device";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import FormControl from "react-bootstrap/FormControl";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -10,6 +12,8 @@ import axios from "../../requestHandler";
 import FilterableTable from "react-filterable-table";
 import Modal from "react-bootstrap/Modal";
 import Avatar from "react-avatar";
+import BiometricData from "./biometricData";
+import CLOUDABISSCANR_BASE_API_URL from "../../device";
 // import { GoogleMap, LoadScript } from "@react-google-maps/api";
 import Swal from "sweetalert2";
 import useClinicians from "../functions/useClincians";
@@ -20,6 +24,7 @@ import useAppointment from "../functions/useAppointments";
 import useProvince from "../functions/useProvince";
 import useFacility from "../functions/useFacility";
 import useDistrict from "../functions/useDistrict";
+import loading from "./process.gif";
 import Status from "../functions/clientStatus";
 import chip from "./chip.svg";
 const containerStyle = {
@@ -51,9 +56,23 @@ const Search = () => {
   const [searchByPhone, setSearchByPhone] = React.useState(false);
   const [searchById, setSearchById] = React.useState(false);
   const searchHandler = async () => {
-    const request = await axios.get(
-      `/api/v1/user/search/${id}/${firstName}/${lastName}`
-    );
+    if (id === "empty") {
+      return false;
+    }
+    setProcessMsg(false);
+    const request = await axios
+      .get(`/api/v1/user/search/${id}/${firstName}/${lastName}`)
+      .catch(function (error) {
+        if (error.request.status === 0) {
+          Swal.fire({
+            title: "Timeout Error",
+            icon: "error",
+            text: "Request took longer than expected!",
+          });
+          setMessageResponse(false);
+          setIsSearchingFingerPrint(false);
+        }
+      });
     if (request.data.status === 401) {
       Swal.fire({
         title: "Response",
@@ -66,11 +85,97 @@ const Search = () => {
     } else {
       // success
       setResults(request.data.results);
+      setIsSearchingFingerPrint(false);
+      capturedBiometricData(false);
     }
   };
 
   // barocde search
+  // biometric
 
+  // const [templateData, setTemplateData] = React.useState("op");
+  const [capturedBiometricData, setCapturedBiometricData] =
+    React.useState("false");
+  const [messageResponse, setMessageResponse] = React.useState(false);
+  const [biometricResults, setBiometricResults] = React.useState(false);
+  const [processMsg, setProcessMsg] = React.useState(false);
+  const [isSearchingFingerPrint, setIsSearchingFingerPrint] =
+    React.useState(false);
+
+  const CaptureBiometricFinger = async () => {
+    const request = await axios.post(
+      "http://localhost:15896/api/CloudScanr/FPCapture",
+      {
+        CustomerKey: "1848CF9353844080B58154394CA960A6",
+        CaptureType: "SingleCapture",
+        CaptureMode: "TemplateOnly",
+        QuickScan: false,
+      }
+    );
+
+    const CapturedBiometrics = request.data;
+    setCapturedBiometricData(CapturedBiometrics.TemplateData);
+    setMessageResponse(CapturedBiometrics.CloudScanrStatus.Message);
+    if (CapturedBiometrics.CloudScanrStatus.Success === false) {
+      return false;
+    }
+  };
+  useEffect(() => {
+    if (capturedBiometricData === "false") {
+      return false;
+    } else {
+      const IdentifyFingerPrint = async () => {
+        setIsSearchingFingerPrint(true);
+
+        const request = await processBiometric.post("api/Biometric/Identify", {
+          CustomerKey: "1848CF9353844080B58154394CA960A6",
+          EngineName: "FPFF02",
+          Format: "ISO",
+          CaptureOperationName: "IDENTIFY",
+          QuickScan: true,
+          BiometricXml: capturedBiometricData,
+          AppKey: "b0a1b0359bbe485fa7d7869ee8a7d5ab",
+          SecretKey: "VNEP7lBLhYkvc5ES3loiEE/Fqs4=",
+        });
+
+        setBiometricResults(request.data.DetailResult[0]);
+
+        if (request.data.OperationResult === "INVALID_TEMPLATE") {
+          Swal.fire({
+            icon: "error",
+            text: request.data.OperationResult,
+          });
+          setProcessMsg(false);
+
+          setMessageResponse(false);
+          setIsSearchingFingerPrint(false);
+        } else if (request.data.OperationResult === "NO_MATCH_FOUND") {
+          Swal.fire({
+            icon: "error",
+            text: request.data.OperationResult,
+          });
+
+          setMessageResponse(false);
+          setIsSearchingFingerPrint(false);
+          setProcessMsg(false);
+        } else if (request.data.OperationResult === "MATCH_FOUND") {
+          setMessageResponse("Processing Biometric information...");
+          setId(request.data.DetailResult[0].ID);
+          setIsSearchingFingerPrint(true);
+
+          searchHandler();
+          // alert(id);
+        } else {
+          alert(request.data.OperationResult);
+        }
+      };
+      IdentifyFingerPrint();
+    }
+
+    // if (capturedBiometricData.length) {
+    //   setProcessMsg(false);
+    // }
+  }, [capturedBiometricData, id]);
   // Search results found
   const [updateRecordModal, setUpdateRecordModal] = React.useState(false);
 
@@ -153,21 +258,29 @@ const Search = () => {
       name: "art_number",
       displayName: "Art Number",
       inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "patient_nupn",
       displayName: "Unique ID",
       inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "first_name",
       displayName: "First Name",
       inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "surname",
       displayName: "Last Name",
       inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "sex",
@@ -183,6 +296,8 @@ const Search = () => {
       name: "mobile_phone_number",
       displayName: "Phone Number",
       inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "",
@@ -1094,7 +1209,7 @@ const Search = () => {
                       >
                         <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z" />
                       </svg>{" "}
-                      Back Results
+                      Back
                     </Button>
                     <Button
                       onClick={() => {
@@ -1113,7 +1228,7 @@ const Search = () => {
                         <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
                       </svg>
                       {"   "}
-                      Transfer Client
+                      Transfer
                     </Button>
                     <Button
                       onClick={() => {
@@ -1133,28 +1248,16 @@ const Search = () => {
                         <path d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0zm-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z" />
                       </svg>
                       {"  "}
-                      Download Card
+                      Get Card
                     </Button>
-                    {/* <Button>
-                      <Dropdown.Toggle variant="success" id="dropdown-basic">
-                        Notices
-                      </Dropdown.Toggle>
-
-                      <Dropdown.Menu>
-                        <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                        <Dropdown.Item href="#/action-2">
-                          Another action
-                        </Dropdown.Item>
-                        <Dropdown.Item href="#/action-3">
-                          Something else
-                        </Dropdown.Item>
-                      </Dropdown.Menu>
-                    </Button> */}{" "}
                   </ButtonGroup>
                 </div>
                 <div className="col-md-12">
                   <Tabs>
-                    <Tab title="Appointments" eventKey="app">
+                    <Tab title="Manage Biometric Data" eventKey="biodata">
+                      <BiometricData data={nupn} />
+                    </Tab>
+                    <Tab title="Active Appointments" eventKey="app">
                       <br />
                       <Container>
                         <h5>
@@ -1205,7 +1308,7 @@ const Search = () => {
                         />
                       </Container>
                     </Tab>
-                    <Tab title="Tracking Appointments" eventKey="track">
+                    <Tab title="Tracking Activities" eventKey="track">
                       <Container>
                         <br />
                         <h5>
@@ -1468,7 +1571,7 @@ const Search = () => {
                             setSearchByNames(true);
                             setSearchByPhone(false);
                           }}
-                          className="btn-sm "
+                          // className="btn-sm "
                           variant="outline-secondary"
                         >
                           <svg
@@ -1492,7 +1595,7 @@ const Search = () => {
                             setSearchByNames(false);
                             setSearchByPhone(false);
                           }}
-                          className="btn-sm "
+                          // className="btn-sm "
                           variant="outline-secondary"
                         >
                           <svg
@@ -1508,7 +1611,29 @@ const Search = () => {
                           {"  "}
                           Barcode scan
                         </Button>
-                        <br />
+                        <Button
+                          onClick={() => {
+                            CaptureBiometricFinger();
+                          }}
+                          variant="outline-secondary"
+                        >
+                          {" "}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="28"
+                            height="28"
+                            fill="currentColor"
+                            class="bi bi-fingerprint"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M8.06 6.5a.5.5 0 0 1 .5.5v.776a11.5 11.5 0 0 1-.552 3.519l-1.331 4.14a.5.5 0 0 1-.952-.305l1.33-4.141a10.5 10.5 0 0 0 .504-3.213V7a.5.5 0 0 1 .5-.5Z" />
+                            <path d="M6.06 7a2 2 0 1 1 4 0 .5.5 0 1 1-1 0 1 1 0 1 0-2 0v.332c0 .409-.022.816-.066 1.221A.5.5 0 0 1 6 8.447c.04-.37.06-.742.06-1.115V7Zm3.509 1a.5.5 0 0 1 .487.513 11.5 11.5 0 0 1-.587 3.339l-1.266 3.8a.5.5 0 0 1-.949-.317l1.267-3.8a10.5 10.5 0 0 0 .535-3.048A.5.5 0 0 1 9.569 8Zm-3.356 2.115a.5.5 0 0 1 .33.626L5.24 14.939a.5.5 0 1 1-.955-.296l1.303-4.199a.5.5 0 0 1 .625-.329Z" />
+                            <path d="M4.759 5.833A3.501 3.501 0 0 1 11.559 7a.5.5 0 0 1-1 0 2.5 2.5 0 0 0-4.857-.833.5.5 0 1 1-.943-.334Zm.3 1.67a.5.5 0 0 1 .449.546 10.72 10.72 0 0 1-.4 2.031l-1.222 4.072a.5.5 0 1 1-.958-.287L4.15 9.793a9.72 9.72 0 0 0 .363-1.842.5.5 0 0 1 .546-.449Zm6 .647a.5.5 0 0 1 .5.5c0 1.28-.213 2.552-.632 3.762l-1.09 3.145a.5.5 0 0 1-.944-.327l1.089-3.145c.382-1.105.578-2.266.578-3.435a.5.5 0 0 1 .5-.5Z" />
+                            <path d="M3.902 4.222a4.996 4.996 0 0 1 5.202-2.113.5.5 0 0 1-.208.979 3.996 3.996 0 0 0-4.163 1.69.5.5 0 0 1-.831-.556Zm6.72-.955a.5.5 0 0 1 .705-.052A4.99 4.99 0 0 1 13.059 7v1.5a.5.5 0 1 1-1 0V7a3.99 3.99 0 0 0-1.386-3.028.5.5 0 0 1-.051-.705ZM3.68 5.842a.5.5 0 0 1 .422.568c-.029.192-.044.39-.044.59 0 .71-.1 1.417-.298 2.1l-1.14 3.923a.5.5 0 1 1-.96-.279L2.8 8.821A6.531 6.531 0 0 0 3.058 7c0-.25.019-.496.054-.736a.5.5 0 0 1 .568-.422Zm8.882 3.66a.5.5 0 0 1 .456.54c-.084 1-.298 1.986-.64 2.934l-.744 2.068a.5.5 0 0 1-.941-.338l.745-2.07a10.51 10.51 0 0 0 .584-2.678.5.5 0 0 1 .54-.456Z" />
+                            <path d="M4.81 1.37A6.5 6.5 0 0 1 14.56 7a.5.5 0 1 1-1 0 5.5 5.5 0 0 0-8.25-4.765.5.5 0 0 1-.5-.865Zm-.89 1.257a.5.5 0 0 1 .04.706A5.478 5.478 0 0 0 2.56 7a.5.5 0 0 1-1 0c0-1.664.626-3.184 1.655-4.333a.5.5 0 0 1 .706-.04ZM1.915 8.02a.5.5 0 0 1 .346.616l-.779 2.767a.5.5 0 1 1-.962-.27l.778-2.767a.5.5 0 0 1 .617-.346Zm12.15.481a.5.5 0 0 1 .49.51c-.03 1.499-.161 3.025-.727 4.533l-.07.187a.5.5 0 0 1-.936-.351l.07-.187c.506-1.35.634-2.74.663-4.202a.5.5 0 0 1 .51-.49Z" />
+                          </svg>
+                          Biometric Scan
+                        </Button>
 
                         <ButtonGroup>
                           <Button
@@ -1604,11 +1729,26 @@ const Search = () => {
                             <FormControl
                               className="form-control-lg"
                               placeholder="type here...."
-                              style={{ backgroundColor: "#F4F4F4" }}
+                              style={{
+                                backgroundColor: "#F4F4F4",
+                                border: "0px",
+                              }}
                               onChange={(e) => {
                                 setId(e.target.value);
                               }}
                             />
+                            {/* <input
+                              type="button"
+                              name="biometricCapture"
+                              value="Biometric Capture"
+                              onclick="captureBiometric()"
+                            />
+                            <input
+                              type="hidde"
+                              name="templateXML"
+                              id="templateXML"
+                              value=""
+                            /> */}
                           </div>
                         </>
                       ) : (
@@ -1747,20 +1887,34 @@ const Search = () => {
                       ) : (
                         <></>
                       )}
-
-                      <Button
-                        style={{
-                          marginTop: "50px",
-                          borderRadius: "25px",
-                        }}
-                        variant="primary"
-                        className="form-control"
-                        onClick={() => {
-                          searchHandler();
-                        }}
-                      >
-                        Submit
-                      </Button>
+                      {isSearchingFingerPrint ? (
+                        <>
+                          <center>
+                            <br />
+                            <strong className="text-danger">
+                              <i class="fas fa-circle-notch fa-spin"></i>
+                              {"  "}
+                              {messageResponse}
+                            </strong>
+                          </center>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            className="float-end"
+                            style={{
+                              marginTop: "50px",
+                              borderRadius: "5px",
+                            }}
+                            variant="primary"
+                            onClick={() => {
+                              searchHandler();
+                            }}
+                          >
+                            Submit
+                          </Button>
+                        </>
+                      )}
                     </div>
                     <div className="col-md-12">
                       <hr />
@@ -2935,6 +3089,72 @@ const Search = () => {
             }}
           >
             Submit
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      {/* finger printn process */}
+      <Modal show={processMsg} dialogClassName="modallg">
+        <Modal.Header>
+          <h3 className="text-primary" style={{ fontWeight: 300 }}>
+            Biometric
+          </h3>
+        </Modal.Header>
+        <Modal.Body className="bg-light">
+          <center>
+            {capturedBiometricData === "" ? (
+              <>
+                {" "}
+                <br />
+                {/* <img src={loading} width={250} />
+            <h5 className="text-primary">Verifying finger prints...</h5> */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="200"
+                  height="200"
+                  fill="currentColor"
+                  class="text-muted bi bi-fingerprint"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M8.06 6.5a.5.5 0 0 1 .5.5v.776a11.5 11.5 0 0 1-.552 3.519l-1.331 4.14a.5.5 0 0 1-.952-.305l1.33-4.141a10.5 10.5 0 0 0 .504-3.213V7a.5.5 0 0 1 .5-.5Z" />
+                  <path d="M6.06 7a2 2 0 1 1 4 0 .5.5 0 1 1-1 0 1 1 0 1 0-2 0v.332c0 .409-.022.816-.066 1.221A.5.5 0 0 1 6 8.447c.04-.37.06-.742.06-1.115V7Zm3.509 1a.5.5 0 0 1 .487.513 11.5 11.5 0 0 1-.587 3.339l-1.266 3.8a.5.5 0 0 1-.949-.317l1.267-3.8a10.5 10.5 0 0 0 .535-3.048A.5.5 0 0 1 9.569 8Zm-3.356 2.115a.5.5 0 0 1 .33.626L5.24 14.939a.5.5 0 1 1-.955-.296l1.303-4.199a.5.5 0 0 1 .625-.329Z" />
+                  <path d="M4.759 5.833A3.501 3.501 0 0 1 11.559 7a.5.5 0 0 1-1 0 2.5 2.5 0 0 0-4.857-.833.5.5 0 1 1-.943-.334Zm.3 1.67a.5.5 0 0 1 .449.546 10.72 10.72 0 0 1-.4 2.031l-1.222 4.072a.5.5 0 1 1-.958-.287L4.15 9.793a9.72 9.72 0 0 0 .363-1.842.5.5 0 0 1 .546-.449Zm6 .647a.5.5 0 0 1 .5.5c0 1.28-.213 2.552-.632 3.762l-1.09 3.145a.5.5 0 0 1-.944-.327l1.089-3.145c.382-1.105.578-2.266.578-3.435a.5.5 0 0 1 .5-.5Z" />
+                  <path d="M3.902 4.222a4.996 4.996 0 0 1 5.202-2.113.5.5 0 0 1-.208.979 3.996 3.996 0 0 0-4.163 1.69.5.5 0 0 1-.831-.556Zm6.72-.955a.5.5 0 0 1 .705-.052A4.99 4.99 0 0 1 13.059 7v1.5a.5.5 0 1 1-1 0V7a3.99 3.99 0 0 0-1.386-3.028.5.5 0 0 1-.051-.705ZM3.68 5.842a.5.5 0 0 1 .422.568c-.029.192-.044.39-.044.59 0 .71-.1 1.417-.298 2.1l-1.14 3.923a.5.5 0 1 1-.96-.279L2.8 8.821A6.531 6.531 0 0 0 3.058 7c0-.25.019-.496.054-.736a.5.5 0 0 1 .568-.422Zm8.882 3.66a.5.5 0 0 1 .456.54c-.084 1-.298 1.986-.64 2.934l-.744 2.068a.5.5 0 0 1-.941-.338l.745-2.07a10.51 10.51 0 0 0 .584-2.678.5.5 0 0 1 .54-.456Z" />
+                  <path d="M4.81 1.37A6.5 6.5 0 0 1 14.56 7a.5.5 0 1 1-1 0 5.5 5.5 0 0 0-8.25-4.765.5.5 0 0 1-.5-.865Zm-.89 1.257a.5.5 0 0 1 .04.706A5.478 5.478 0 0 0 2.56 7a.5.5 0 0 1-1 0c0-1.664.626-3.184 1.655-4.333a.5.5 0 0 1 .706-.04ZM1.915 8.02a.5.5 0 0 1 .346.616l-.779 2.767a.5.5 0 1 1-.962-.27l.778-2.767a.5.5 0 0 1 .617-.346Zm12.15.481a.5.5 0 0 1 .49.51c-.03 1.499-.161 3.025-.727 4.533l-.07.187a.5.5 0 0 1-.936-.351l.07-.187c.506-1.35.634-2.74.663-4.202a.5.5 0 0 1 .51-.49Z" />
+                </svg>
+                <br />
+                <br />
+                <br />
+                <h3 className="text-muted">Capture Left Middle Finger</h3>
+              </>
+            ) : (
+              <>
+                {" "}
+                <img src={loading} width={250} />
+                {messageResponse === false ? (
+                  <>
+                    <h5 className="text-muted" style={{ fontWeight: 400 }}>
+                      Capture biometric data = <br />
+                      <small>Use middle left finger</small>
+                    </h5>
+                  </>
+                ) : (
+                  <>
+                    <p id="response">{messageResponse}</p>
+                  </>
+                )}
+              </>
+            )}
+          </center>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            style={{ borderRadius: "25px" }}
+            onClick={() => {
+              CaptureBiometricFinger();
+            }}
+            className="btn-sm"
+          >
+            Scan Finger
           </Button>
         </Modal.Footer>
       </Modal>

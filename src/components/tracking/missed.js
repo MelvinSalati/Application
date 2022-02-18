@@ -28,10 +28,17 @@ const MissedAppointments = () => {
   const [viewTrackingForm, setViewTrackingForm] = React.useState(false);
   const [appointmentID, setAppointmentID] = React.useState("null");
   const [trackingHx, setTrackingHx] = React.useState([]);
+  const [isClientWithDrugs, setClientsWithDrugs] = React.useState("null");
+  //count missed appointments for
+  const [week1, setWeek1] = React.useState("..");
+  const [week2, setWeek2] = React.useState("..");
+  const [week3, setWeek3] = React.useState("..");
+  const [week4, setWeek4] = React.useState("..");
+  //tracking button
 
   const btnTracking = async () => {
     const request = await axios.get(
-      `/api/v1/facility/tracking/form/${trackingDate}/${trackingTime}/${trackingActivity}/${trackingResponse}/${trackingOutcome}/${trackingComment}/${appointmentID}/${recipientUuid}`
+      `/api/v1/facility/tracking/form/${isClientWithDrugs}/${trackingDate}/${trackingTime}/${trackingActivity}/${trackingResponse}/${trackingOutcome}/${trackingComment}/${appointmentID}/${recipientUuid}`
     );
     if (request.data.status === 200) {
       Swal.fire({
@@ -52,39 +59,7 @@ const MissedAppointments = () => {
     }
   };
 
-  // missed one week
-  const missedOneWeek = async () => {
-    setAppointmentsList(reset);
-    const request = await axios.get(
-      `api/v1/facility/appointments/missed/${hmis}/1`
-    );
-    setAppointmentsList(request.data.appointments);
-  };
-  // missed two week
-  const missedTwoWeek = async () => {
-    setAppointmentsList(reset);
-
-    const request = await axios.get(
-      `api/v1/facility/appointments/missed/two/${hmis}`
-    );
-    setAppointmentsList(request.data.appointments);
-  };
-  // missed 3 week
-  const missedThreeWeek = async () => {
-    const request = await axios.get(
-      `api/v1/facility/appointments/missed/three/${hmis}`
-    );
-    setAppointmentsList(request.data.appointments);
-  };
-  // missed one week
-  const missedFourWeek = async () => {
-    setAppointmentsList(reset);
-
-    const request = await axios.get(
-      `api/v1/facility/appointments/missed/four/${hmis}`
-    );
-    setAppointmentsList(request.data.appointments);
-  };
+  const [daysMissed, setDaysMissed] = React.useState(1);
 
   useEffect(() => {
     async function getTrackingHistory() {
@@ -100,13 +75,25 @@ const MissedAppointments = () => {
   useEffect(() => {
     async function getMissedAppointments() {
       const request = await axios.get(
-        `api/v1/facility/appointments/missed/${hmis}/1`
+        `api/v1/facility/appointments/missed/${hmis}/${daysMissed}`
       );
       setAppointmentsList(request.data.appointments);
+      setWeek1(request.data.appointments.length);
     }
-
     getMissedAppointments();
-  }, []);
+  }, [daysMissed]);
+
+  useEffect(() => {
+    async function countAppointments() {
+      const request = await axios.get(`count/missed/${hmis}`);
+
+      setWeek4(request.data.week_four);
+      setWeek3(request.data.week_three);
+      setWeek2(request.data.week_two);
+      setWeek1(request.data.week_one);
+    }
+    countAppointments();
+  }, [week1, week2, week3, week4]);
 
   const tableBtns = (props) => {
     return (
@@ -165,41 +152,58 @@ const MissedAppointments = () => {
       name: "SN",
       displayName: "SN",
       inputInfilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "art",
       displayName: "Art Number",
       inputInfilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
+
     {
       name: "nupn",
       displayName: "Unique ID",
       inputInfilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "First Name",
       displayName: "First Name",
-      inputInfilterable: true,
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "Last Name",
       displayName: "Last Name",
-      inputInfilterable: true,
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "Phone",
       displayName: "Phone",
       inputInfilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "Days Missed",
       displayName: "Days Missed",
       inputInfilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "Date Declared Late",
       displayName: "Days Declared Late",
       inputInfilterable: true,
+      exactFilterable: true,
+      sortable: true,
     },
     {
       name: "",
@@ -213,50 +217,65 @@ const MissedAppointments = () => {
       <Container style={{ height: "540px" }}>
         <h5 className="component">
           <i className="fas fa-user-md"></i> {"  "} Appointment missed
-          {/* <ButtonGroup className="btn-sm float-end">
-                    <Button onClick={
-                            () => {
-                                missedOneWeek();
-                            }
-                        }
-                        variant="outline-primary"
-                        className="btn-sm">
-                        1 week
-                    </Button>
-                    <Button onClick={
-                            () => {
-                                missedTwoWeek();
-                            }
-                        }
-                        className="btn-sm">
-                        2 week
-                    </Button>
+          <ButtonGroup className="btn-sm float-end">
+            <Button
+              onClick={() => {
+                setDaysMissed(1);
+              }}
+              variant="outline-success"
+              className="btn-sm"
+            >
+              1 week{" "}
+              <Badge as="span" text="white" pill={true} bg="success">
+                {week1}
+              </Badge>
+            </Button>
+            <Button
+              variant="outline-primary"
+              onClick={() => {
+                setDaysMissed(2);
+              }}
+              className="btn-sm"
+            >
+              2 week{" "}
+              <Badge as="span" pill={true} bg="primary" text="white">
+                {week2}
+              </Badge>
+            </Button>
 
-                    <Button onClick={
-                            () => {
-                                missedThreeWeek();
-                            }
-                        }
-                        variant="outline-primary"
-                        className="btn-sm">
-                        3 week
-                    </Button>
+            <Button
+              onClick={() => {
+                setDaysMissed(3);
+              }}
+              variant="outline-warning"
+              className="btn-sm"
+            >
+              3 week{" "}
+              <Badge pill={true} bg="warning" text="white">
+                {week3}
+              </Badge>
+            </Button>
 
-                    <Button onClick={
-                            () => {
-                                missedFourWeek();
-                            }
-                        }
-                        className="btn-sm">
-                        4 weeks
-                    </Button>
-                </ButtonGroup> */}
+            <Button
+              onClick={() => {
+                setDaysMissed(4);
+              }}
+              className="btn-sm"
+              variant="outline-danger"
+            >
+              4 weeks
+              {"  "}
+              <Badge pill={true} bg="danger" text="white">
+                {week4}
+              </Badge>
+            </Button>
+          </ButtonGroup>
         </h5>
         <Container style={{ height: "550px" }}>
           <FilterableTable
             data={appointmentsList}
             fields={tableFields}
-            pageSize={6}
+            pageSize={8}
             pageSizes={false}
             topPagerVisible={false}
             sortable={true}
@@ -270,11 +289,11 @@ const MissedAppointments = () => {
           dialogClassName="modal-lg"
         >
           <Modal.Header closeButton>
-            <h5>
+            <h5 className="text-secondary">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
+                width="28"
+                height="28"
                 fill="currentColor"
                 className="bi bi-plus-circle"
                 viewBox="0 0 16 16"
@@ -317,8 +336,8 @@ const MissedAppointments = () => {
             <h5 className="text-muted">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
+                width="28"
+                height="28"
                 fill="currentColor"
                 className="bi bi-plus-circle"
                 viewBox="0 0 16 16"
@@ -327,12 +346,13 @@ const MissedAppointments = () => {
                 <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
               </svg>
               {"   "}
-              Enter Tracking Intervention
+              Record Tracking Intervention
             </h5>
           </Modal.Header>
           <Modal.Body className="bg-light">
             <div className="row">
               <div className="col-md-6">
+                <label>Next Appointment Date</label>
                 <FormControl
                   onChange={(e) => {
                     setTrackingDate(e.target.value);
@@ -342,6 +362,7 @@ const MissedAppointments = () => {
                 />
               </div>
               <div className="col-md-6">
+                <label>Time</label>
                 <FormControl
                   onChange={(e) => {
                     setTrackingTime(e.target.value);
@@ -351,7 +372,7 @@ const MissedAppointments = () => {
                 />
               </div>
               <div className="col-md-12">
-                <br />
+                <label>Tracking actviaty</label>
                 <select
                   onChange={(e) => {
                     setTrackingActivity(e.target.value);
@@ -368,7 +389,7 @@ const MissedAppointments = () => {
               </div>
               <div className="col-md-6">
                 <br />
-
+                <label>Tracking Response</label>
                 <select
                   onChange={(e) => {
                     setTrackingResponse(e.target.value);
@@ -390,7 +411,7 @@ const MissedAppointments = () => {
               </div>
               <div className="col-md-6">
                 <br />
-
+                <label>Tracking Outcome</label>
                 <select
                   onChange={(e) => {
                     setTrackingOutcome(e.target.value);
@@ -405,8 +426,24 @@ const MissedAppointments = () => {
                 </select>
               </div>
               <div className="col-md-12">
+                {trackingResponse === "7" ? (
+                  <>
+                    <label>Resign Appointment Date</label>
+                    <br />
+                    <FormControl
+                      type="date"
+                      onChange={(e) => {
+                        setClientsWithDrugs(e.target.value);
+                      }}
+                    />
+                  </>
+                ) : (
+                  <></>
+                )}
+              </div>
+              <div className="col-md-12">
                 <br />
-
+                <label>Comment</label>
                 <FormControl
                   onChange={(e) => {
                     setTrackingComment(e.target.value);

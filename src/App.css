@@ -1,11 +1,31 @@
 body {
-  background: #eeeeee;
+  background: #eee;
   font-family: "roboto";
   /* #f8f8f8; */
 }
+label {
+  margin-top: 15px;
+  font-size: 12px;
+  color: #007bbf;
+}
+.bg-charts {
+  background: #f5f5f54b;
+}
+.fa-spin {
+  -webkit-animation: fa-spin 600ms infinite linear;
+  animation: fa-spin 600ms infinite linear;
+}
 #content {
   margin: 2% auto;
+  /* display: flex;
+  margin: 2% auto;
+  justify-content: center;
+  align-items: center;
+  /* text-align: center; */
+  /* min-height: 100vh;  */
+  height: max-content !important;
 }
+
 footer {
   position: absolute;
   bottom: 0px;
@@ -19,9 +39,22 @@ footer {
 .form-control {
   font-family: "Roboto";
 }
+.tab-content {
+  height: 752px !important;
+}
 .media {
   display: flex;
   flex-direction: row;
+}
+.finger {
+  position: relative;
+  margin: 5px;
+}
+
+.finger-captured-icon {
+  position: absolute;
+  top: 5px !important;
+  right: 5px !important;
 }
 .media > .image {
   width: 20%;

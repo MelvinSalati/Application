@@ -1,24 +1,90 @@
 import Container from "react-bootstrap/esm/Container";
+import Modal from "react-bootstrap/Modal";
+import useClinicians from "../functions/useClincians";
+import useCommunity from "../functions/useCommunity";
+import useAppointment from "../functions/useAppointments";
 import Tabs from "react-bootstrap/esm/Tabs";
 import Tab from "react-bootstrap/esm/Tab";
+import PendingAppointments from "./pending";
 import useAppointmentsToday from "../functions/useAppointmentsToday";
 import useCreated from "../functions/useCreated";
 import FilterableTable from "react-filterable-table";
 import FormControl from "react-bootstrap/FormControl";
-var React = require("react");
-// import useClinicians from "../functions/useClinician";
-// import useCommunity from "../functions/useCommunity";
+import Button from "react-bootstrap/Button";
+import AppointmentForm from "../Forms/appointment";
+import React from "react";
+import Swal from "sweetalert2";
+import API_REQUEST from "../../requestHandler";
 const Scheduled = () => {
+  const [appointmentTypes, setAppointmentTypes] = useAppointment();
+  const [appointmentModal, setAppointmentModal] = React.useState(false);
+  const [clinicians, setClinicians] = useClinicians();
+  const [community, setCommunity] = useCommunity();
+  // const [key, setKey] = React.useState("facility");
+  // const [firstName, setFirstName] = React.useState(props.fname);
+  // const [lastName, setLastName] = React.useState(props.lname);
+  const [appointmentType, setAppointmentType] = React.useState("empty");
+  const [timeBooked, setTimeBooked] = React.useState("empty");
+  const [dateBooked, setDateBooked] = React.useState("empty");
+  const [clinicianAssigned, setClinicianAssigned] = React.useState("empty");
+  const [communityAssigned, setCommunityAssigned] = React.useState("empty");
+  const [updateContact, setUpdateContact] = React.useState("empty");
+  const [comments, setComments] = React.useState("empty");
+  const [appointmentCreatedSuccessfully, setAppointmentCreatedSuccessfully] =
+    React.useState(false);
   const [key, setKey] = React.useState("expected");
   const [createdToday, setCreatedToday] = useCreated();
-
   const [appointmentDate, setAppointmentDate] = React.useState("null");
   const [appointments, setAppointments] = useAppointmentsToday(appointmentDate);
+  const [appointmentForm, setAppointmentForm] = React.useState(false);
+  const [firstName, setFirstName] = React.useState();
+  const [lastName, setLastName] = React.useState();
+  const [uuid, setUuid] = React.useState();
+  const [nupn, setNupn] = React.useState();
+  //create
+  const appointmentHandler = async () => {
+    const hmis = sessionStorage.getItem("hmis");
+    const request = await API_REQUEST.get(
+      `/api/v1/create/appointment/${uuid}/${appointmentType}/${timeBooked}/${dateBooked}/${clinicianAssigned}/${communityAssigned}/${comments}/${updateContact}/${hmis}`
+    );
+    // addItems();
+    if (request.data.status === 200) {
+      Swal.fire({
+        title: "Success",
+        text: request.data.message,
+        icon: "success",
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
 
-  //creted tp day
+      //remove from list
+      removeItem(uuid);
+      setAppointmentModal(false);
+    } else if (request.data.status === 401) {
+      Swal.fire({
+        title: "Error",
+        text: request.data.message,
+        icon: "error",
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
+      setAppointmentModal(false);
+    }
+  };
 
-  const [] = React.useState([]);
-
+  //
+  const removeItem = () => {
+    var ind = appointments.findIndex(function (element) {
+      return element.uuid === uuid;
+    });
+    if (ind !== -1) {
+      appointments.splice(ind, 1);
+    }
+  };
+  //add data to array
+  // const addItems = () => {
+  //   appointments.push([{ SN: "111", Art_Number: "000" }]);
+  // };
   const createdBtn = (props) => {
     return (
       <>
@@ -44,18 +110,145 @@ const Scheduled = () => {
 
   const createFields = [
     { name: "SN", displayName: "SN", inputFilterable: true },
-    { name: "Art Number", displayName: "Art Number", inputFilterable: true },
-    { name: "Unique ID", displayName: "Unique ID", inputFilterable: true },
-    { name: "First Name", displayName: "First Name", inputFilterable: true },
-    { name: "Last Name", displayName: "Last Name", inputFilterable: true },
-    { name: "Age/Sex", displayName: "Age/Sex", inputFilterable: true },
-    { name: "Next Visit", displayName: "Next Visit", inputFilterable: true },
+    {
+      name: "Art Number",
+      displayName: "Art Number",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Unique ID",
+      displayName: "Unique ID",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "First Name",
+      displayName: "First Name",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Last Name",
+      displayName: "Last Name",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Age/Sex",
+      displayName: "Age/Sex",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Next Visit",
+      displayName: "Next Visit",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
     { name: "", displayName: "", render: createdBtn },
+  ];
+
+  const CreateButton = (props) => {
+    return (
+      <>
+        <Button
+          variant="outline-primary"
+          className="btn-sm "
+          onClick={() => {
+            setAppointmentModal(true);
+            setFirstName(props.record.First_Name);
+            setLastName(props.record.Last_Name);
+            setUuid(props.record.uuid);
+            setNupn(props.record.Unique_ID);
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            className="text-primary bi bi-plus-circle-fill"
+            viewBox="0 0 16 16"
+          >
+            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z" />
+          </svg>
+          {"  "}
+          Book Appointment
+        </Button>
+      </>
+    );
+  };
+  const Scheduled = [
+    { name: "SN", displayName: "SN", inputFilterable: true },
+    {
+      name: "Art_Number",
+      displayName: "Art Number",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Unique_ID",
+      displayName: "Unique_ID",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "First_Name",
+      displayName: "First Name",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Last_Name",
+      displayName: "Last Name",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Age/Sex",
+      displayName: "Age/Sex",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Last_Visit",
+      displayName: "Visited On",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Appointment Type",
+      displayName: "Appointment Type",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    {
+      name: "Reminded",
+      displayName: "Reminded",
+      inputFilterable: true,
+      exactFilterable: true,
+      sortable: true,
+    },
+    { name: "", displayName: "", render: CreateButton },
   ];
 
   return (
     <>
-      <Container style={{ height: "540px" }}>
+      <Container>
         <h5 className="h5 component">
           {" "}
           <svg
@@ -132,12 +325,20 @@ const Scheduled = () => {
             </h5>
             <FilterableTable
               data={appointments}
+              fields={Scheduled}
               pageSize={8}
               pageSizes={false}
               topPagerVisible={false}
             />
+            <AppointmentForm
+              fname={firstName}
+              lname={lastName}
+              nupn={nupn}
+              uuid={uuid}
+              status={appointmentForm}
+            />
           </Tab>
-          <Tab title="Appointment Created Today" eventKey="today">
+          <Tab title="Appointments Created Today" eventKey="today">
             <h5 className="component h6" style={{ fontSize: "bold" }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -160,12 +361,44 @@ const Scheduled = () => {
               topPagerVisible={false}
             />
           </Tab>
+          <Tab
+            eventKey="pending"
+            title={
+              <>
+                <span className="text-danger">DO NOT TRACK</span>
+              </>
+            }
+          >
+            <PendingAppointments />
+          </Tab>
         </Tabs>
       </Container>
-      {/* <Modal show={true} dialogClassName="modal-lg">
-        <Modal.Header></Modal.Header>
-        <Modal.Body>
-          {" "}
+      {/* appointment Form */}
+      {/* modal appointments */}
+      <Modal
+        show={appointmentModal}
+        onHide={() => {
+          setAppointmentModal(false);
+        }}
+        dialogClassName="modal-lg"
+      >
+        <Modal.Header closeButton className="bg-white">
+          <h6 className="modal-title text-primary">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              fill="currentColor"
+              className="bi bi-plus-circle"
+              viewBox="0 0 16 16"
+            >
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+            </svg>
+            {"  "}Book Appointment
+          </h6>
+        </Modal.Header>
+        <Modal.Body className="bg-light">
           <div className="row">
             <div className="col-md-6">
               <select
@@ -177,8 +410,10 @@ const Scheduled = () => {
                 <optgroup label="Appointments">
                   <option value="0">Select Appointments</option>
                   {appointmentTypes.map((row) => (
-                    <option value={row.id}>{row.appointment_name}</option>
-                  ))}
+                    <option key={row.id} value={row.id}>
+                      {row.appointment_name}
+                    </option>
+                  ))}{" "}
                 </optgroup>
               </select>
             </div>
@@ -193,7 +428,6 @@ const Scheduled = () => {
               />
               <br />
             </div>
-
             <div className="col-md-6"></div>
             <div className="col-md-6">
               <FormControl
@@ -215,10 +449,11 @@ const Scheduled = () => {
                 <optgroup label="Assign  Clinicians">
                   <option value="">Select Clinician</option>
                   {clinicians.map((row) => (
-                    <option value={row.id}>
-                      {row.first_name} {row.last_name}
+                    <option key={row.id} value={row.id}>
+                      {row.first_name}
+                      {row.last_name}{" "}
                     </option>
-                  ))}
+                  ))}{" "}
                 </optgroup>
               </select>
               <br />
@@ -234,10 +469,11 @@ const Scheduled = () => {
                 <optgroup label="Assign  Clinicians">
                   <option value="">Select Community volunteer</option>
                   {community.map((row) => (
-                    <option value={row.id}>
-                      {row.first_name} {row.last_name}
+                    <option key={row.id} value={row.id}>
+                      {row.first_name}
+                      {row.last_name}{" "}
                     </option>
-                  ))}
+                  ))}{" "}
                 </optgroup>
               </select>
               <br />
@@ -268,7 +504,16 @@ const Scheduled = () => {
             </div>
           </div>
         </Modal.Body>
-      </Modal> */}
+        <Modal.Footer>
+          <Button
+            onClick={() => {
+              appointmentHandler();
+            }}
+          >
+            Submit
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

@@ -9,14 +9,14 @@ import Report from "./components/reports/reports";
 import { Router, Switch, Route } from "react-router-dom";
 import history from "./history";
 import Workers from "./components/workers/workers";
-
+import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
 function App() {
   return (
     <>
       <Router history={history}>
         <Switch>
           <Route exact path="/" component={Authentication} />
-          <Route exact path="/home" component={Home} />
+          <Route exact path="/app" component={Home} />
           <Route exact path="/home" component={Scheduled} />
           <Route exact path="/events" component={Events} />
           <Route exact path="/notices" component={Notices} />

@@ -1,19 +1,19 @@
-import React, { useEffect } from 'react'
-import axios from '../../requestHandler'
+import React, { useEffect } from "react";
+import axios from "../../requestHandler";
 
 const useTransferOut = () => {
-  const [transferData, setTransferData] = React.useState([])
-  const hmis = sessionStorage.getItem('hmis')
+  const [transferData, setTransferData] = React.useState([]);
+  const hmis = sessionStorage.getItem("hmis");
   useEffect(() => {
     async function getTransferOut() {
-      const request = await axios.get(`/api/v1/facility/transferout/${hmis}`)
-      setTransferData(request.data.list)
+      const request = await axios.get(`/api/v1/facility/transferout/${hmis}`);
+      setTransferData(request.data.list);
     }
     //get
-    getTransferOut()
-  }, [])
+    getTransferOut();
+  }, []);
 
-  return [transferData]
-}
+  return [transferData];
+};
 
-export default useTransferOut
+export default useTransferOut;

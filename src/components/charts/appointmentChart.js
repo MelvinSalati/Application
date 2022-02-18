@@ -1,11 +1,19 @@
 import React, { useState } from "react";
-import { Bar } from "react-chartjs-2";
+// import { Bar } from "react-chartjs-2";
 import { useEffect } from "react";
 import axios from "../../requestHandler";
-import Chart from "chart.js/auto";
-import { cleanup } from "@testing-library/react";
+import { Audio } from "react-loader-spinner";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
-const BarChart = () => {
+const BarCharts = () => {
   //appointments
   const [scheduled, setScheduled] = React.useState(
     sessionStorage.getItem("scheduled")
@@ -24,71 +32,30 @@ const BarChart = () => {
     sessionStorage.getItem("nottracked")
   );
   const [pending, setPending] = React.useState({});
-
+  const [dataRange, setDataRange] = React.useState("1");
+  const [selectDataRange, setSelectDataRange] = React.useState("1");
+  const [isLoading, setIsLoading] = React.useState(false);
   const hmis = sessionStorage.getItem("hmis");
-  // set data
-  const [barData, setBarData] = useState({
-    labels: [
-      "Scheduled",
-      "Reminded",
-      "Missed",
-      "Returned",
-      "Tracked",
-      "Not tracked",
-    ],
-    scales: {
-      xAxes: [
-        {
-          gridLines: {
-            display: false,
-          },
-        },
-      ],
-      yAxes: [
-        {
-          gridLines: {
-            display: false,
-          },
-        },
-      ],
-    },
-    datasets: [
-      {
-        label: "Number #",
-        data: [scheduled, reminded, missed, returned, tracked, notTracked],
-        backgroundColor: ["#569afe", "#569afe", "#569afe", "#569afe"],
-        borderWidth: 0,
-      },
-    ],
-  });
-  // set options
-  const [barOptions, setBarOptions] = useState({
-    options: {
-      scales: {
-        yAxes: [
-          {
-            ticks: {
-              beginAtZero: true,
-            },
-          },
-        ],
-      },
-      title: {
-        display: true,
-        text: "Data Orgranized In Bars",
-        fontSize: 25,
-      },
-      legend: {
-        display: true,
-        position: "top",
-      },
-    },
-  });
 
+  // reset the chart data to Zero Point
+  const resetChart = () => {
+    setScheduled("0");
+    setTracked("0");
+    setMissed("0");
+    setReturned("0");
+    setPending("0");
+    setNotTracked("0");
+    setReminded("0");
+  };
   useEffect(() => {
-    async function getWeeklyData() {
-      const request = await axios.get(`api/v1/facility/weekly/reports/${hmis}`);
+    async function getChartData() {
+      //loading the chart
+      setIsLoading(true);
+      resetChart();
 
+      const request = await axios.get(
+        `api/v1/facility/weekly/reports/${selectDataRange}/${hmis}`
+      );
       setScheduled(request.data[0].scheduled);
       setTracked(request.data[0].tracked);
       setMissed(request.data[0].missed);
@@ -96,32 +63,119 @@ const BarChart = () => {
       setPending(request.data[0].pending);
       setNotTracked(request.data[0].nottracked);
       setReminded(request.data[0].reminded);
-      sessionStorage.setItem("scheduled", request.data[0].scheduled);
-      sessionStorage.setItem("reminded", request.data[0].reminded);
-      sessionStorage.setItem("missed", request.data[0].missed);
-      sessionStorage.setItem("returned", request.data[0].returned);
-      sessionStorage.setItem("tracked", request.data[0].tracked);
-      sessionStorage.setItem("nottracked", request.data[0].nottracked);
-      sessionStorage.setItem("pending", request.data[0].pending);
+      setIsLoading(false);
     }
-    getWeeklyData();
+    getChartData();
     return () => {
       // updateData();
     };
-  }, []);
+  }, [hmis, selectDataRange]);
+  const data = [
+    {
+      name: " Scheduled",
+      Number: scheduled,
+    },
+    {
+      name: "Reminded by SMS",
+      Number: reminded,
+    },
+    {
+      name: "Missed",
+      Number: missed,
+    },
+    {
+      name: "Returned ",
+      Number: returned,
+    },
+    {
+      name: "Tracked",
+      Number: tracked,
+    },
+    {
+      name: "No Tracking",
+      Number: notTracked,
+    },
+  ];
+
   return (
     <>
       <center>
-        {" "}
-        <Bar
+        <div className="row bg-charts">
+          <div className="col-md-6"></div>
+          <div className="col-md-3"></div>
+          <div className="col-md-3">
+            <select
+              onChange={(e) => {
+                setSelectDataRange(e.target.value);
+              }}
+              className="form-control"
+              style={{ margin: "5px" }}
+            >
+              <optgroup label="Period">
+                <option value="1">Daily</option>
+                <option value="2">Weekly</option>
+              </optgroup>
+            </select>{" "}
+          </div>
+        </div>
+        {/* <Bar
           data={barData}
           options={barOptions}
           redraw={false}
-          className="bar"
-        />
+          className=
+          "bar"
+        /> */}
+        {isLoading ? (
+          <>
+            {" "}
+            <span
+              style={{
+                width: "150px",
+                height: "150px",
+                background: "#F4F4F4",
+                padding: "20px",
+                position: "absolute",
+                top: "460px",
+                borderRadius: "15px",
+              }}
+              className="border"
+            >
+              <Audio
+                height="100"
+                width="100"
+                color="#569AFE"
+                ariaLabel="loading"
+              />
+              <strong>Loading..</strong>
+              <br />
+            </span>
+          </>
+        ) : (
+          <></>
+        )}
+        <BarChart
+          width={1114}
+          height={680}
+          data={data}
+          margin={{
+            top: 5,
+            right: 30,
+            left: 20,
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="Number" fill="#569AFE" />
+          {/* <Bar dataKey="Number" fill="#82ca9d" /> */}
+        </BarChart>
+        <h5>Retention Indicators</h5>
       </center>
     </>
   );
 };
 
-export default BarChart;
+export default BarCharts;

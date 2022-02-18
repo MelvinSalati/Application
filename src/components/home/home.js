@@ -113,7 +113,7 @@ const Home = () => {
                       <></>
                     )}
                     {"  "}
-                    Notifications
+                    Notices
                   </>
                 }
                 id="basic-nav-dropdown"
@@ -226,7 +226,11 @@ const Home = () => {
                 }
                 id="basic-nav-dropdown"
               >
-                <NavDropdown.Item href="#action/3.1">
+                <NavDropdown.Item
+                  onClick={() => {
+                    history.push("/dashboard");
+                  }}
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -271,7 +275,7 @@ const Home = () => {
       {isMenuOpen ? (
         <>
           <Container>
-            <div className="menu bg-white">
+            <div className="menu bg-white" style={{ borderRadius: "10px" }}>
               <div className="container-fluid">
                 <div className="row">
                   <div className="col-md-12 border-bottom">
@@ -333,9 +337,9 @@ const Home = () => {
                       }}
                     >
                       <center>
-                        <Badge className="notification-count" bg="danger">
-                          10
-                        </Badge>
+                        {/* <Badge className="notification-count" bg="danger">
+                          
+                        </Badge> */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           width="45"
@@ -477,7 +481,12 @@ const Home = () => {
                     </div>
                   </div>
                   <div className="col-md-4 border-left">
-                    <div className="menu-content">
+                    <div
+                      className="menu-content"
+                      onClick={() => {
+                        history.push("/");
+                      }}
+                    >
                       <center>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"

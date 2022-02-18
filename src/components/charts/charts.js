@@ -1,7 +1,7 @@
 import React from "react";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
-import BarChart from "./appointmentChart";
+import BarCharts from "./appointmentChart";
 import EventsChart from "./events";
 
 const Charts = () => {
@@ -34,7 +34,7 @@ const Charts = () => {
           eventKey="appointments"
           title={<span>Weekly Appointment Indicators</span>}
         >
-          <BarChart />
+          <BarCharts />
         </Tab>
         <Tab eventKey="events" title={<>Weekly Events Indicators</>}>
           <EventsChart />

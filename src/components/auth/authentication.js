@@ -10,18 +10,35 @@ import Swal from "sweetalert2";
 import axios from "../../requestHandler";
 import Logo from "./../icon.jpeg";
 import history from "../../history";
+import BiometricDevice from "../../device";
 
 const Authentication = () => {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
 
-  const submitHandler = async () => {
+  //biometric device authentication
+  const getToken = async () => {
+    const Token = await BiometricDevice.post(
+      "/api/CloudABISMatchingServers/Token",
+      {
+        BaseAPIURL: "https://fpsvr101.cloudabis.com/v1/",
+        AppKey: "b0a1b0359bbe485fa7d7869ee8a7d5ab",
+        SecretKey: "VNEP7lBLhYkvc5ES3loiEE/Fqs4=",
+      }
+    );
+    //store token in sesion
+    sessionStorage.setItem("token", Token.data.ResponseData.access_token);
+  };
+
+  const submitHandler = async (event) => {
+    // event.preventDefault();
     const request = await axios.post("api/v1/user/login", {
       email: email,
       password: password,
     });
     if (request.data.status === 200) {
-      history.push("/home");
+      history.push("/app");
+      getToken();
       sessionStorage.setItem("hmis", request.data.facility);
       sessionStorage.setItem("name", request.data.facility_name);
       sessionStorage.setItem("username", request.data.username);
@@ -63,53 +80,48 @@ const Authentication = () => {
       </Navbar>
 
       <div className="container" id="login">
-        <Form
-          onSubmit={() => {
-            submitHandler();
-          }}
-        >
-          <center>
-            <img src={Logo} alt="" height={70} width={70} />
-            <h3 className="text-muted">Authentication</h3>
-          </center>
-          <FormGroup>
-            <div className="input">
-              <span className="input-icon"></span>
-              <FormControl
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                }}
-                type="email"
-                placeholder="Email"
-              />
-            </div>
-          </FormGroup>
-          <br />
-          <FormGroup>
-            <div className="input">
-              <span className="input-icon"></span>
-              <FormControl
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                }}
-                type="password"
-                placeholder="Password"
-              />
-            </div>
-            <hr />
-          </FormGroup>
-          <FormGroup>
-            <Button
-              onClick={() => {
-                submitHandler();
+        <center>
+          <img src={Logo} alt="" height={70} width={70} />
+          <h3 className="text-muted">Authentication</h3>
+        </center>
+        <FormGroup>
+          <div className="input">
+            <span className="input-icon"></span>
+            <FormControl
+              onChange={(e) => {
+                setEmail(e.target.value);
               }}
-              className="btn-block"
-              id="btn-login"
-            >
-              Submit
-            </Button>
-          </FormGroup>
-        </Form>
+              type="email"
+              placeholder="Email"
+            />
+          </div>
+        </FormGroup>
+        <br />
+        <FormGroup>
+          <div className="input">
+            <span className="input-icon"></span>
+            <FormControl
+              onChange={(e) => {
+                setPassword(e.target.value);
+              }}
+              type="password"
+              placeholder="Password"
+            />
+          </div>
+          <hr />
+        </FormGroup>
+        <FormGroup>
+          <Button
+            onClick={() => {
+              submitHandler();
+            }}
+            // type="submit"
+            className="btn-block"
+            id="btn-login"
+          >
+            Submit
+          </Button>
+        </FormGroup>
       </div>
     </>
   );
