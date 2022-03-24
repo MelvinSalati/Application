@@ -15,6 +15,7 @@ import BiometricDevice from "../../device";
 const Authentication = () => {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [buttonState, setButtonState] = React.useState(false);
 
   //biometric device authentication
   const getToken = async () => {
@@ -32,6 +33,8 @@ const Authentication = () => {
 
   const submitHandler = async (event) => {
     // event.preventDefault();
+
+    setButtonState(true);
     const request = await axios.post("api/v1/user/login", {
       email: email,
       password: password,
@@ -52,6 +55,7 @@ const Authentication = () => {
         icon: "warning",
         confirmButtonText: "Exit",
       });
+      setButtonState(false);
     }
   };
 
@@ -118,6 +122,7 @@ const Authentication = () => {
             // type="submit"
             className="btn-block"
             id="btn-login"
+            disabled={buttonState}
           >
             Submit
           </Button>

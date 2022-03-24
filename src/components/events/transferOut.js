@@ -46,18 +46,10 @@ const TransferOut = () => {
       displayName: "Date Transfered",
       inputFilterable: true,
     },
-    {
-      name: "Status",
-      displayName: "Notification Status",
-      render: tableBtn,
-    },
   ];
   return (
     <>
-      <h5
-        className="component h6 text-secondary"
-        style={{ marginBottom: "10px" }}
-      >
+      <h5 className="component text-secondary" style={{ marginBottom: "10px" }}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"

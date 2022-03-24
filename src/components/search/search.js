@@ -539,7 +539,7 @@ const Search = () => {
   const [placeDeath, setPlaceDeath] = React.useState("null");
   const deathBtn = async () => {
     const request = await axios.get(
-      `api/v1/client/mortality/${reportedBy}/${cause}/${dateDeath}/${placeDeath}/${clientUuid}`
+      `api/v1/client/mortality/${reportedBy}/${cause}/${dateDeath}/${placeDeath}/${clientUuid}/${hmis}`
     );
     if (request.status === 200) {
       Swal.fire({

@@ -22,15 +22,18 @@ class ReportController extends Controller
                 $period        = Appointments::whereBetween('due_date', [$start_week,$end_week])->where('institutionid', $hmis);
                 $appointments  = $period->where('appointment_type', 1);
                
-                $track_period  = Tracking::join('appointments', 'tracking.appointment_id', '=', 'appointments.id')->whereBetween('appointments.created_at', [$start_week,$end_week])->where('institutionid', $hmis);
+                $track_period  = Tracking::join('appointments', 'tracking.appointment_id', '=', 'appointments.id')->whereBetween('appointments.created_at', [$start_week,$end_week])->where('appointments.institutionid', $hmis);
                 ;
                 //scheduled
                 $scheduled = $appointments->count();
                 //reminded
-                $reminded  = $appointments->where('reminded', 'Yes')->count();
+                $yesterday = Carbon::now()->format('Y-m-d');
+                $period        = Appointments::whereBetween('due_date', [$yesterday,$yesterday])->where('institutionid', $hmis);
+                $reminded  = $period->where('reminded', 'like', 'Yes')->count();
                 //missed
-                $period        = Appointments::whereBetween('due_date', [$start_week,$end_week])->where('institutionid', $hmis);
-                ;
+                $yesterday = Carbon::yesterday()->format('Y-m-d');
+                $period        = Appointments::whereBetween('due_date', [$yesterday,$yesterday])->where('institutionid', $hmis);
+                
                 $appointments  = $period->where('appointment_type', 1);
                 //tracking
                 $missed    = $appointments->whereRaw('datediff(CURDATE(),due_date) > 0 ')->where('status', 0)->count();

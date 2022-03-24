@@ -5,6 +5,7 @@ import Container from "react-bootstrap/Container";
 import TreatmentInteruptions from "./interruption";
 import TransferIn from "./transferIn";
 import TransferOut from "./transferOut";
+import Mortality from "./mortality";
 
 const Events = () => {
   const [key, setKey] = React.useState("out");
@@ -39,6 +40,9 @@ const Events = () => {
           </Tab>
           <Tab eventKey="ti" title="Treatment Interuptions">
             <TreatmentInteruptions />
+          </Tab>
+          <Tab eventKey="mo" title="Mortality">
+            <Mortality />
           </Tab>
         </Tabs>
       </Container>

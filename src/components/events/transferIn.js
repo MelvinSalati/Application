@@ -3,38 +3,38 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
 import FilterableTable from "react-filterable-table";
 import useTransferIn from "../functions/useTransferIn";
-import Modal from "react-bootstrap/esm/Modal";
+import Modal from "react-bootstrap/Modal";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import axios from "../../requestHandler";
 
-const modalStyle = {
-  height: "460px",
-};
 const TransferIn = () => {
   const [data, setData] = useTransferIn([]);
   //tabs are
   const [key, setKey] = React.useState("pharmacy");
   const [viewDetailsModal, setViewDetailsModal] = React.useState(false);
   const [clientUuid, setClientUuid] = React.useState("");
-  const [pharmacyHistory, setPharmacyHistory] = React.useState("");
+  const [pharmacyHistory, setPharmacyHistory] = React.useState([]);
   const [labHistory, setLabHistory] = React.useState("");
 
-  useEffect(
-    (client_Uuid) => {
-      if (client_Uuid) {
-        async function appointmentHistory() {
-          const request = await axios.get(
-            `/api/v1/client/appointment/history/${clientUuid}`
-          );
-          setPharmacyHistory(request.data.pharmacy);
-          setLabHistory(request.data.lab);
-        }
-        appointmentHistory();
-      }
-    },
-    [clientUuid]
-  );
+  useEffect(() => {
+    async function appointmentHistory() {
+      const request = await axios.get(
+        `/api/v1/client/appointment/history/${clientUuid}`
+      );
+      setPharmacyHistory(request.data.pharmacy);
+    }
+    appointmentHistory();
+  }, [clientUuid]);
+  // useEffect(() => {
+  //   async function acceptTransfer() {
+  //     const request = await axios.get(
+  //       `/api/v1/client/transfer/accept/${clientUuid}`
+  //     );
+  //     setPharmacyHistory(request.data.pharmacy);
+  //   }
+  //   acceptTransfer();
+  // }, [clientUuid]);
 
   const tableBtn = (props) => {
     return (
@@ -44,8 +44,9 @@ const TransferIn = () => {
             variant="outline-primary"
             onClick={() => {
               setViewDetailsModal(true);
-              setClientUuid(props.record.recipient_uuid);
+              setClientUuid(props.record.ArtNumber);
             }}
+            className="btn-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -60,22 +61,33 @@ const TransferIn = () => {
             {"  "}
             View details
           </Button>
-          <Button variant="primary" className="btn-sm">
+          {/* <Button variant="primary" className="btn-sm">
             Accept Transfer
-          </Button>
+          </Button> */}
         </ButtonGroup>
       </>
     );
   };
+  const fields = [
+    { name: "first_name", displayName: "First Name", inputFilterable: true },
+    { name: "last_name", displayName: "Last Name", inputFilterable: true },
+    { name: "created_at", displayName: "Last Visit", inputFilterable: true },
+    {
+      name: "due_date",
+      displayName: "Next Appointment Date",
+      inputFilterable: true,
+    },
+  ];
   const tableFields = [
     { name: "SN", displayName: "SN", inputFilterable: true },
-    { name: "Art Number", displayName: "Art Number", inputFilterable: true },
+    { name: "ArtNumber", displayName: "Art Number", inputFilterable: true },
     { name: "Unique ID", displayName: "Unique ID", inputFilterable: true },
     { name: "First Name", displayName: "First Name", inputFilterable: true },
     { name: "Last Name", displayName: "Last Name", inputFilterable: true },
+
     {
       name: "Receiving Facility",
-      displayName: "Receiving Facility",
+      displayName: "From",
       inputFilterable: true,
     },
     {
@@ -85,7 +97,7 @@ const TransferIn = () => {
     },
     {
       name: "Status",
-      displayName: "Notification Status",
+      displayName: "",
       render: tableBtn,
     },
   ];
@@ -113,11 +125,18 @@ const TransferIn = () => {
         topPagerVisible={false}
       />
       {/* Modall */}
-      <Modal show={viewDetailsModal} dialogClassName="modal-lg">
-        {/* <Modal.Header className="bg-light">
-          <h5>Transfer Details</h5>
-        </Modal.Header> */}
-        <Modal.Body>
+      <Modal
+        show={viewDetailsModal}
+        dialogClassName="modal-lg"
+        onHide={() => {
+          setViewDetailsModal(false);
+        }}
+      >
+        <Modal.Header
+          style={{ backgroundColor: "#F4F4F4" }}
+          className="border-bottom"
+          closeButton
+        >
           <h5>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -131,22 +150,28 @@ const TransferIn = () => {
             </svg>{" "}
             Previous Appointments
           </h5>
+        </Modal.Header>
+        <Modal.Body style={{ padding: "10px", height: "400px" }}>
           <br />
           <Tabs
             onSelect={(k) => {
               setKey(k);
             }}
             activeKey={key}
+            // className="bg-light"
           >
-            <Tab
-              style={modalStyle}
-              title="Pharmacy Appointments"
-              eventKey="pharmacy"
-            >
+            <Tab title="Last Pharmacy Appointment" eventKey="pharmacy">
               {/* {pharmacyHistory} */}
-              <FilterableTable data={pharmacyHistory} />
+              <br />
+              <FilterableTable
+                data={pharmacyHistory}
+                fields={fields}
+                pageSize={8}
+                pageSizes={false}
+                topPagerVisible={false}
+              />
             </Tab>
-            <Tab
+            {/* <Tab
               style={modalStyle}
               title="Laboratory Appointments"
               eventKey="lab"
@@ -160,7 +185,7 @@ const TransferIn = () => {
               </center>
 
               {labHistory}
-            </Tab>
+            </Tab> */}
           </Tabs>
         </Modal.Body>
         <Modal.Footer className="bg-light">
