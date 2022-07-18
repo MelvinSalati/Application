@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { useEffect } from "react";
 import axios from "../../requestHandler";
-import Chart from "chart.js/auto";
-import { cleanup } from "@testing-library/react";
 
 const BarChart = () => {
   //appointments
