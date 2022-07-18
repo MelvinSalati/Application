@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import FormGroup from "react-bootstrap/FormGroup";
@@ -7,12 +7,55 @@ import Navbar from "react-bootstrap/Navbar";
 import Container from "react-bootstrap/Container";
 import "../../App.css";
 import Swal from "sweetalert2";
-import axios from "../../requestHandler";
+import axio from "../../requestHandler";
 import Logo from "./../icon.jpeg";
 import history from "../../history";
 import BiometricDevice from "../../device";
+import axios from "axios";
 
 const Authentication = () => {
+  useEffect(() => {
+    async function appointmentReminder() {
+      const response = await axios
+        .get(`https://broadcaster.v1.smart-umodzi.com/public/reminder`)
+        .then((response) => {
+          console.log("Reminder system running....");
+        })
+        .catch((error) => {
+          console.log("Reminder system not running due to " + error.message);
+        });
+    }
+    async function appointmentMissed() {
+      const response = await axios
+        .get(`https://broadcaster.v1.smart-umodzi.com/public/missed`)
+        .then((response) => {
+          console.log("Missed appointment reminder system running....");
+        })
+        .catch((error) => {
+          console.log(
+            "Missed appointment reminder system not running due to " +
+              error.message
+          );
+        });
+    }
+
+    async function promptTracking() {
+      const response = await axios
+        .get(`https://broadcaster.v1.smart-umodzi.com/public/instant`)
+        .then((response) => {
+          console.log("Missed appointment reminder system running....");
+        })
+        .catch((error) => {
+          console.log(
+            "Missed appointment reminder system not running due to " +
+              error.message
+          );
+        });
+    }
+    appointmentReminder();
+    appointmentMissed();
+    promptTracking();
+  });
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [buttonState, setButtonState] = React.useState(false);
@@ -35,7 +78,7 @@ const Authentication = () => {
     // event.preventDefault();
 
     setButtonState(true);
-    const request = await axios.post("api/v1/user/login", {
+    const request = await axio.post("api/v1/user/login", {
       email: email,
       password: password,
     });
@@ -49,6 +92,8 @@ const Authentication = () => {
       sessionStorage.setItem("last_name", request.data.last_name);
       sessionStorage.setItem("id", request.data.id);
       sessionStorage.setItem("phone", request.data.phone);
+      sessionStorage.setItem("lat", request.data.latitude);
+      sessionStorage.setItem("lon", request.data.longitude);
     } else if (request.data.status === 401) {
       Swal.fire({
         text: request.data.message,

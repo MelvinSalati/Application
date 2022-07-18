@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Navbar from "react-bootstrap/Navbar";
 import NavDropdown from "react-bootstrap/NavDropdown";
 import Nav from "react-bootstrap/Nav";
@@ -14,22 +14,50 @@ import Scheduled from "../appointments/scheduled";
 import Events from "../events/events";
 import Tracking from "../tracking/tracking";
 import Reports from "../reports/reports";
-import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/esm/Button";
-import useRemoteNotifications from "../functions/useRemoteNotifications";
 import axios from "../../requestHandler";
 import Workers from "../workers/workers";
 
 const Home = () => {
-  const [checkNotifications, setCheckNotifications] = React.useState(false);
-  const [notifications, setNotifications] = useRemoteNotifications([]);
-
+  const hmis = sessionStorage.getItem("hmis");
+  const [uuid, setUuid] = React.useState(false);
+  const [notifications, setNotifications] = React.useState([]);
+  const [notificationData, setNotificationData] = React.useState(false);
   //read notification
+  useEffect(() => {
+    async function getNotifications() {
+      const request = await axios.get(
+        `api/v1/facility/notifications/new/${hmis}`
+      );
+      setNotifications(request.data.notifications);
+    }
+
+    getNotifications();
+  }, [notificationData]);
+
   const readNotification = async (id) => {
-    const request = await axios.get(
-      `/api/v1/facility/notifications/read/${id}`
-    );
+    const request = await axios
+      .get(`/api/v1/facility/notifications/read/${uuid}`)
+      .then((response) => {
+        console.log(response.data);
+      })
+      .catch((error) => {
+        alert(error.data);
+      });
+    // removeItem();
   };
+  const removeItem = () => {
+    var ind = notifications.findIndex(function (element) {
+      return element.uuid === uuid;
+    });
+
+    console.log(uuid);
+    if (ind !== -1) {
+      const data = notifications.splice(ind, 1);
+      console.log(data);
+    }
+  };
+
   //menu
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -69,7 +97,11 @@ const Home = () => {
     //     setIsMenuOpen(false);
     //   }}
     >
-      <Navbar bg="white" expand="lg" className="border-bottom">
+      <Navbar
+        bg="white"
+        expand="lg"
+        className="border-bottom shadow-sm p-3 mb-5 bg-white rounded "
+      >
         <Container>
           <Navbar.Brand
             className="text-secondary"
@@ -78,8 +110,7 @@ const Home = () => {
             }}
             style={{ fontFamily: "Roboto", fontWeight: 800 }}
           >
-            <img src={Icon} alt="" width={30} height={30} />
-            {"  "}{" "}
+            <img src={Icon} alt="" width={50} height={50} />{" "}
             <strong className="text-primary">
               {sessionStorage.getItem("name")}
             </strong>
@@ -113,46 +144,58 @@ const Home = () => {
                       <></>
                     )}
                     {"  "}
-                    Notices
+                    <strong>Notices</strong>
                   </>
                 }
                 id="basic-nav-dropdown"
               >
-                <h5 className="text-primary text-center border-botto component">
+                <h5 className="text-primary text-center border-botto component ">
                   <i className="fas fa-envelope-open-text fa-fw"></i> {"   "}
                   Remote Notifications{" "}
                 </h5>
                 <div
                   className="notifications list-group"
-                  style={{ width: "310px", display: "flex" }}
+                  style={{ width: 320, padding: 10 }}
                 >
                   {notifications ? (
                     <>
                       {notifications.map((row) => (
                         <div
-                          className="notification-container border-bottom"
-                          style={{ width: "310px", display: "flex" }}
+                          className="notification-containe border-bottom"
+                          style={{
+                            width: "310px",
+                            display: "flex",
+                            flexiDirection: "row",
+                          }}
                         >
                           <Avatar
                             name={row.client_name}
-                            size="32"
+                            size="28"
                             round={true}
+                            clas
                           />
-                          <div className="notification-text ">
+                          <div className="notification-text">
                             <p>
-                              <strong className="text-muted">
+                              <strong className="text-secondary">
                                 {row.client_name}
-                              </strong>{" "}
+                              </strong>
                               <br />
                               <span>{row.text}</span>
                               <br />
-                              <span className="subbuttons" style={{}}>
-                                <span
-                                  className="border-left"
+                              <span
+                                className="subbuttons"
+                                style={{ marginTop: 5 }}
+                              >
+                                <Button
+                                  variant="outline-secondary"
+                                  className="border-left btn-sm"
                                   onClick={() => {
-                                    // setNotificationID(row.id);
-                                    readNotification(row.id);
+                                    setUuid(row.id);
+                                    removeItem();
+                                    readNotification();
+                                    setNotificationData(true);
                                   }}
+                                  style={{ borderRadius: 25, marginTop: 10 }}
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -169,7 +212,7 @@ const Home = () => {
                                     {" "}
                                     Mark as seen
                                   </small>
-                                </span>
+                                </Button>
                                 <span className="border-left buttons">
                                   {/* <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -218,10 +261,13 @@ const Home = () => {
                       round={true}
                       size={30}
                     />{" "}
-                    Hi,
-                    {sessionStorage.getItem("first_name") +
-                      "   " +
-                      sessionStorage.getItem("last_name")}
+                    <strong>
+                      {" "}
+                      Hi,
+                      {sessionStorage.getItem("first_name") +
+                        "   " +
+                        sessionStorage.getItem("last_name")}
+                    </strong>
                   </span>
                 }
                 id="basic-nav-dropdown"
@@ -275,11 +321,14 @@ const Home = () => {
       {isMenuOpen ? (
         <>
           <Container>
-            <div className="menu bg-white" style={{ borderRadius: "10px" }}>
+            <div
+              className="menu bg-light"
+              style={{ borderRadius: "5px", marginTop: 10 }}
+            >
               <div className="container-fluid">
                 <div className="row">
-                  <div className="col-md-12 border-bottom">
-                    <h4 className="text-center text-menu-title">Application</h4>
+                  <div className="col-md-12 border-bottom bg-white">
+                    <h4 className="text-center text-menu-title">Menu</h4>
                   </div>
                   {/* first row  */}
                   <div className="col-md-4">
@@ -296,12 +345,14 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-search"
+                          className="bi bi-search text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                         </svg>
-                        <h5 className="text-muted">Search</h5>
+                        <h5 className="text-muted">
+                          <strong>Search</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -319,12 +370,14 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-bar-chart-fill"
+                          className="bi bi-bar-chart-fill text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z" />
                         </svg>
-                        <h5 className="text-muted">Charts</h5>
+                        <h5 className="text-muted">
+                          <strong>Charts</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -345,12 +398,14 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-chat-left-text-fill"
+                          className="bi bi-chat-left-text-fill text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293L.854 15.146A.5.5 0 0 1 0 14.793V2zm3.5 1a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 2.5a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 2.5a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5z" />
                         </svg>
-                        <h5 className="text-muted">Notices</h5>
+                        <h5 className="text-muted">
+                          <strong>Notices</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -369,7 +424,7 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-activity"
+                          className="bi bi-activity text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path
@@ -377,7 +432,9 @@ const Home = () => {
                             d="M6 2a.5.5 0 0 1 .47.33L10 12.036l1.53-4.208A.5.5 0 0 1 12 7.5h3.5a.5.5 0 0 1 0 1h-3.15l-1.88 5.17a.5.5 0 0 1-.94 0L6 3.964 4.47 8.171A.5.5 0 0 1 4 8.5H.5a.5.5 0 0 1 0-1h3.15l1.88-5.17A.5.5 0 0 1 6 2Z"
                           />
                         </svg>
-                        <h5 className="text-muted">Schedules</h5>
+                        <h5 className="text-muted">
+                          <strong>Schedules</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -395,12 +452,14 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-bar-chart-steps"
+                          className="bi bi-bar-chart-steps text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5A.5.5 0 0 1 .5 0zM2 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5v-1zm2 4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1z" />
                         </svg>
-                        <h5 className="text-muted">Events</h5>
+                        <h5 className="text-muted">
+                          <strong>Events</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -418,13 +477,15 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-signpost-2-fill"
+                          className="bi bi-signpost-2-fill text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M7.293.707A1 1 0 0 0 7 1.414V2H2a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h5v1H2.5a1 1 0 0 0-.8.4L.725 8.7a.5.5 0 0 0 0 .6l.975 1.3a1 1 0 0 0 .8.4H7v5h2v-5h5a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H9V6h4.5a1 1 0 0 0 .8-.4l.975-1.3a.5.5 0 0 0 0-.6L14.3 2.4a1 1 0 0 0-.8-.4H9v-.586A1 1 0 0 0 7.293.707z" />
                         </svg>
 
-                        <h5 className="text-muted">Tracking</h5>
+                        <h5 className="text-muted">
+                          <strong>Tracking</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -443,12 +504,14 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-pie-chart-fill"
+                          className="bi bi-pie-chart-fill text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M15.985 8.5H8.207l-5.5 5.5a8 8 0 0 0 13.277-5.5zM2 13.292A8 8 0 0 1 7.5.015v7.778l-5.5 5.5zM8.5.015V7.5h7.485A8.001 8.001 0 0 0 8.5.015z" />
                         </svg>
-                        <h5 className="text-muted">Reports</h5>
+                        <h5 className="text-muted">
+                          <strong>Reports</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -466,7 +529,7 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-people-fill"
+                          className="bi bi-people-fill text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
@@ -476,7 +539,9 @@ const Home = () => {
                           />
                           <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
                         </svg>
-                        <h5 className="text-muted">Workers</h5>
+                        <h5 className="text-muted">
+                          <strong>Workers</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -493,12 +558,14 @@ const Home = () => {
                           width="45"
                           height="45"
                           fill="currentColor"
-                          className="bi bi-unlock-fill"
+                          className="bi bi-unlock-fill text-primary"
                           viewBox="0 0 16 16"
                         >
                           <path d="M11 1a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h5V3a3 3 0 0 1 6 0v4a.5.5 0 0 1-1 0V3a2 2 0 0 0-2-2z" />
                         </svg>{" "}
-                        <h5 className="text-muted">Sign Off</h5>
+                        <h5 className="text-muted">
+                          <strong>Sign Off</strong>
+                        </h5>
                       </center>
                     </div>
                   </div>
@@ -511,12 +578,20 @@ const Home = () => {
         <></>
       )}
       <div
-        style={{ height: "720px" }}
         className="container bg-white border"
         id="content"
+        style={{ borderRadius: 10, padding: 10 }}
       >
         {component()}
       </div>
+      <p className="text-center">
+        <strong>
+          <image src={Icon} width={30} />
+          Maintained by Minstry Of Health <br />
+          Eastern Province Health Office with{" "}
+          <span className="text-primary">CDC support</span>
+        </strong>
+      </p>
     </div>
   );
 };
