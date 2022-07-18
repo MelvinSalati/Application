@@ -1,20 +1,10 @@
 import React, { Component, useEffect } from "react";
-import { GoogleMap, LoadScript } from "@react-google-maps/api";
-import useGeolocation from "react-hook-geolocation";
-import {
-  Marker,
-  DirectionService,
-  DirectionsRenderer,
-} from "@react-google-maps/api";
 import Container from "react-bootstrap/esm/Container";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import processBiometric from "../../processBiometric";
-import BiometricDevice from "../../device";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import FormControl from "react-bootstrap/FormControl";
-import InputGroup from "react-bootstrap/InputGroup";
-import Dropdown from "react-bootstrap/Dropdown";
 import Button from "react-bootstrap/Button";
 import axios from "../../requestHandler";
 import FilterableTable from "react-filterable-table";
@@ -23,8 +13,6 @@ import Avatar from "react-avatar";
 import Biometric from "../Biometric/device";
 import BiometricData from "./biometricData";
 import "react-notifications/lib/notifications.css";
-import { DirectionsService } from "@react-google-maps/api";
-import Map from "./Map";
 import {
   NotificationContainer,
   NotificationManager,
@@ -36,18 +24,11 @@ import CLOUDABISSCANR_BASE_API_URL from "../../device";
 import Swal from "sweetalert2";
 import useClinicians from "../functions/useClincians";
 import useCommunity from "../functions/useCommunity";
-import useClientAppointments from "../functions/useClientAppointments";
-import ClientAppointments from "./clientAppointments";
 import useAppointment from "../functions/useAppointments";
 import useProvince from "../functions/useProvince";
-import useFacility from "../functions/useFacility";
-import useDistrict from "../functions/useDistrict";
 import loading from "./process.gif";
-import Status from "../functions/clientStatus";
-import chip from "./chip.svg";
 import { Alert } from "react-bootstrap";
 import Validator from "validator";
-import Notifications from "react-notifications/lib/Notifications";
 
 const Search = () => {
   const broadCaster = {
