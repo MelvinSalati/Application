@@ -13,11 +13,8 @@ import FormControl from "react-bootstrap/FormControl";
 import Button from "react-bootstrap/Button";
 import AppointmentForm from "../Forms/appointment";
 import React from "react";
-import axios from "../../requestHandler";
-import {
-  NotificationContainer,
-  NotificationManager,
-} from "react-notifications";
+import Swal from "sweetalert2";
+import API_REQUEST from "../../requestHandler";
 const Scheduled = () => {
   const [appointmentTypes, setAppointmentTypes] = useAppointment();
   const [appointmentModal, setAppointmentModal] = React.useState(false);
@@ -26,13 +23,15 @@ const Scheduled = () => {
   // const [key, setKey] = React.useState("facility");
   // const [firstName, setFirstName] = React.useState(props.fname);
   // const [lastName, setLastName] = React.useState(props.lname);
-  const [appointmentType, setAppointmentType] = React.useState("");
-  const [timeBooked, setTimeBooked] = React.useState("");
-  const [dateBooked, setDateBooked] = React.useState("");
-  const [clinicianAssigned, setClinicianAssigned] = React.useState("");
-  const [communityAssigned, setCommunityAssigned] = React.useState("");
-  const [updateContact, setUpdateContact] = React.useState("");
-  const [comments, setComments] = React.useState("");
+  const [appointmentType, setAppointmentType] = React.useState("empty");
+  const [timeBooked, setTimeBooked] = React.useState("empty");
+  const [dateBooked, setDateBooked] = React.useState("empty");
+  const [clinicianAssigned, setClinicianAssigned] = React.useState("empty");
+  const [communityAssigned, setCommunityAssigned] = React.useState("empty");
+  const [updateContact, setUpdateContact] = React.useState("empty");
+  const [comments, setComments] = React.useState("empty");
+  const [appointmentCreatedSuccessfully, setAppointmentCreatedSuccessfully] =
+    React.useState(false);
   const [key, setKey] = React.useState("expected");
   const [createdToday, setCreatedToday] = useCreated();
   const [appointmentDate, setAppointmentDate] = React.useState("null");
@@ -40,84 +39,40 @@ const Scheduled = () => {
   const [appointmentForm, setAppointmentForm] = React.useState(false);
   const [firstName, setFirstName] = React.useState();
   const [lastName, setLastName] = React.useState();
-  const [uuid, setUuid] = React.useState("");
+  const [uuid, setUuid] = React.useState();
   const [nupn, setNupn] = React.useState();
-
   //create
-  const param = {
-    type: appointmentType,
-    date: dateBooked,
-    time: timeBooked,
-    clinician: clinicianAssigned,
-    chw: communityAssigned,
-    comments: comments,
-    update: updateContact,
-    hmis: sessionStorage.getItem("hmis"),
-    id: uuid,
-  };
+  const appointmentHandler = async () => {
+    const hmis = sessionStorage.getItem("hmis");
+    const request = await API_REQUEST.get(
+      `/api/v1/create/appointment/${uuid}/${appointmentType}/${timeBooked}/${dateBooked}/${clinicianAssigned}/${communityAssigned}/${comments}/${updateContact}/${hmis}`
+    );
+    // addItems();
+    if (request.data.status === 200) {
+      Swal.fire({
+        title: "Success",
+        text: request.data.message,
+        icon: "success",
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
 
-  const bookAppointment = async () => {
-    if (appointmentType.length === 0) {
-      NotificationManager.warning(
-        "Please select appointment type!!",
-        "Response",
-        6000
-      );
-    } else if (dateBooked === "") {
-      NotificationManager.warning(
-        "Please select next appointment date!!",
-        "Response",
-        6000
-      );
-    } else if (clinicianAssigned === "") {
-      NotificationManager.warning(
-        "Please  assign clinician!!",
-        "Response",
-        6000
-      );
-    } else if (communityAssigned === "") {
-      NotificationManager.warning(
-        "Please  assign comunity health worker!!",
-        "Response",
-        6000
-      );
-    } else {
-      NotificationManager.success(
-        "Appointment submitted successfully",
-        "Response",
-        6000
-      );
+      //remove from list
+      removeItem(uuid);
       setAppointmentModal(false);
-      const request = await axios
-        .post("api/v1/create/appointment", param)
-        .then((response) => {
-          removeItem(uuid);
-          if (response.data.status === 200) {
-            setAppointmentType("");
-            setDateBooked("");
-            setTimeBooked("");
-            setClinicianAssigned("");
-            setCommunityAssigned("");
-            setComments("");
-            setUpdateContact("");
-          } else if (request.data.status === 401) {
-            NotificationManager.success(
-              "Appointment could not be created!",
-              "Response",
-              6000
-            );
-            setAppointmentModal(false);
-          }
-        })
-        .catch((error) => {
-          NotificationManager.warning(error, "Response", 6000);
-        });
+    } else if (request.data.status === 401) {
+      Swal.fire({
+        title: "Error",
+        text: request.data.message,
+        icon: "error",
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
+      setAppointmentModal(false);
     }
   };
 
-  /**
-   * Remove Item from list
-   */
+  //
   const removeItem = () => {
     var ind = appointments.findIndex(function (element) {
       return element.uuid === uuid;
@@ -126,7 +81,6 @@ const Scheduled = () => {
       appointments.splice(ind, 1);
     }
   };
-
   //add data to array
   // const addItems = () => {
   //   appointments.push([{ SN: "111", Art_Number: "000" }]);
@@ -429,7 +383,7 @@ const Scheduled = () => {
         dialogClassName="modal-lg"
       >
         <Modal.Header closeButton className="bg-white">
-          <h5 className="modal-title text-primary">
+          <h6 className="modal-title text-primary">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -442,17 +396,15 @@ const Scheduled = () => {
               <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
             </svg>
             {"  "}Book Appointment
-          </h5>
+          </h6>
         </Modal.Header>
         <Modal.Body className="bg-light">
           <div className="row">
             <div className="col-md-6">
-              <label>Appointment type</label>
               <select
                 onChange={(e) => {
                   setAppointmentType(e.target.value);
                 }}
-                defaultValue={appointmentType}
                 className="form-control"
               >
                 <optgroup label="Appointments">
@@ -466,38 +418,32 @@ const Scheduled = () => {
               </select>
             </div>
             <div className="col-md-6">
-              <label>Appointment time</label>
               <FormControl
                 min="07:00"
                 max="17:00"
                 onChange={(e) => {
                   setTimeBooked(e.target.value);
                 }}
-                defaultValue={timeBooked}
                 type="time"
               />
               <br />
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Next appointment date</label>
               <FormControl
                 onChange={(e) => {
                   setDateBooked(e.target.value);
                 }}
-                defaultValue={dateBooked}
                 type="date"
               />
               <br />
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Assign Clinician</label>
               <select
                 onChange={(e) => {
                   setClinicianAssigned(e.target.value);
                 }}
-                defaultValue={clinicianAssigned}
                 className="form-control"
               >
                 <optgroup label="Assign  Clinicians">
@@ -514,12 +460,10 @@ const Scheduled = () => {
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Assign CHW</label>
               <select
                 onChange={(e) => {
                   setCommunityAssigned(e.target.value);
                 }}
-                defaultValue={communityAssigned}
                 className="form-control"
               >
                 <optgroup label="Assign  Clinicians">
@@ -536,12 +480,10 @@ const Scheduled = () => {
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Update phone number</label>
               <FormControl
                 onChange={(e) => {
                   setUpdateContact(e.target.value);
                 }}
-                defaultValue={updateContact}
                 type="text"
                 placeholder="Update phone number"
               />
@@ -549,9 +491,7 @@ const Scheduled = () => {
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Comment</label>
               <FormControl
-                defaultValue={comments}
                 onChange={(e) => {
                   setComments(e.target.value);
                 }}
@@ -567,14 +507,13 @@ const Scheduled = () => {
         <Modal.Footer>
           <Button
             onClick={() => {
-              bookAppointment();
+              appointmentHandler();
             }}
           >
             Submit
           </Button>
         </Modal.Footer>
       </Modal>
-      <NotificationContainer />
     </>
   );
 };

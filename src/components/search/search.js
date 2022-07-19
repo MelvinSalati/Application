@@ -1,66 +1,50 @@
-import React, { Component, useEffect } from "react";
+import React, { useEffect } from "react";
 import Container from "react-bootstrap/esm/Container";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import processBiometric from "../../processBiometric";
+import BiometricDevice from "../../device";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import FormControl from "react-bootstrap/FormControl";
+import Dropdown from "react-bootstrap/Dropdown";
 import Button from "react-bootstrap/Button";
 import axios from "../../requestHandler";
 import FilterableTable from "react-filterable-table";
 import Modal from "react-bootstrap/Modal";
 import Avatar from "react-avatar";
-import Biometric from "../Biometric/device";
 import BiometricData from "./biometricData";
-import "react-notifications/lib/notifications.css";
-import {
-  NotificationContainer,
-  NotificationManager,
-} from "react-notifications";
-
-import "react-toastify/dist/ReactToastify.css";
 import CLOUDABISSCANR_BASE_API_URL from "../../device";
 // import { GoogleMap, LoadScript } from "@react-google-maps/api";
 import Swal from "sweetalert2";
 import useClinicians from "../functions/useClincians";
 import useCommunity from "../functions/useCommunity";
+import useClientAppointments from "../functions/useClientAppointments";
+import ClientAppointments from "./clientAppointments";
 import useAppointment from "../functions/useAppointments";
 import useProvince from "../functions/useProvince";
+import useFacility from "../functions/useFacility";
+import useDistrict from "../functions/useDistrict";
 import loading from "./process.gif";
-import { Alert } from "react-bootstrap";
-import Validator from "validator";
-
+import Status from "../functions/clientStatus";
+import chip from "./chip.svg";
+const containerStyle = {
+  width: "100%",
+  height: "5909",
+};
+const css = {
+  fileRule: "evenodd",
+};
+const center = {
+  lat: -13.65517,
+  lng: -32.64164,
+};
 const Search = () => {
-  const broadCaster = {
-    baseURL: "broadcaster.v1.smart-umodzi.com/public/",
-    pending: "/pending",
-    missed: "/missed",
-    payLoad: {
-      hmis: sessionStorage.getItem("hmis"),
-    },
-  };
-
-  const sendPendingAppointmentsReminder = async () => {
-    const request = await axios
-      .post(broadCaster.baseURL + broadCaster.pending, broadCaster.payLoad)
-      .then((response) => {})
-      .catch((error) => {});
-  };
-  const sendMissedAppointmentsReminder = async () => {
-    const request = await axios
-      .post(broadCaster.baseURL + broadCaster.missed, {})
-      .then((response) => {})
-      .catch((error) => {});
-  };
-
+  // maps
+  // clinicians
   const [clinicians, setClinicians] = useClinicians();
   const [community, setCommunity] = useCommunity();
-  const [map, setMap] = React.useState(false);
-
+  // tabs
   const [key, setKey] = React.useState("facility");
-
-  //scan biometric
-  const [bioScan, setBioScan] = React.useState(false);
   // search form
   const [id, setId] = React.useState("empty");
   const [firstName, setFirstName] = React.useState("empty");
@@ -71,7 +55,6 @@ const Search = () => {
   const [searchBarcode, setSearchBarcode] = React.useState(false);
   const [searchByPhone, setSearchByPhone] = React.useState(false);
   const [searchById, setSearchById] = React.useState(false);
-
   const searchHandler = async () => {
     if (id === "empty") {
       return false;
@@ -107,144 +90,10 @@ const Search = () => {
     }
   };
 
-  /**
-   *  Managing all events in ART
-   *  @param Modal
-   *  @param Transfer
-   *  @param LTFU
-   *
-   *  @param Mortality
-   *
-   */
+  // barocde search
+  // biometric
 
-  //clinicians details
-
-  const [transferModal, setTransferModal] = React.useState(false);
-  const [clinicianTransfer, setClinicianTransfer] = React.useState(" ");
-  const [title, setTitle] = React.useState("");
-  const [clinicianPhone, setClinicianPhone] = React.useState("");
-  const [message, setMessage] = React.useState("");
-
-  // tranfer event
-  const [patientTransferStatus, setPatientTransferStatus] =
-    React.useState(true);
-  // event LTFU
-  const [patientLTFUStatus, setPatientLTFUStatus] = React.useState(false);
-  const [eventStatus, setEventStatus] = React.useState("");
-  const [formTitle, setFormTitle] = React.useState("");
-  const [province, setProvince] = useProvince([]);
-  const [district, setDistrict] = React.useState(true);
-  const [selectDistrict, setSelectDistrict] = React.useState(false);
-  const [selectProvince, setSelectProvince] = React.useState(false);
-  const [facility, setFacility] = React.useState([]);
-  const [facilityTransfer, setFacilityTransfer] = React.useState("");
-  const [districtState, setDistrictState] = React.useState(true);
-  const [facilityState, setFacilityState] = React.useState(true);
-  const [downloadTransferLetter, setDownloadTransferLetter] =
-    React.useState(false);
-  const [reasonReferral, setReasonReferral] = React.useState("0");
-  const [otherReason, setOtherReason] = React.useState("");
-  const [transferComment, setTransferComment] = React.useState(" ");
-  //get referral form
-
-  const btnTransfer = async () => {
-    const hmis = sessionStorage.getItem("hmis");
-
-    // validations
-    const options = { ignore_whitespace: true };
-    if (Validator.isEmpty(clinicianTransfer, options)) {
-      NotificationManager.warning(
-        "Please specify the clinician's name!",
-        "Response",
-        6000
-      );
-    } else if (Validator.isEmpty(title, options)) {
-      NotificationManager.warning(
-        "Please specify the clinician's title e.g Hiv Nurse Prescriber!",
-        "Response",
-        6000
-      );
-    } else if (!Validator.isMobilePhone(clinicianPhone)) {
-      NotificationManager.warning(
-        "Please enter a valid phone number!",
-        "Response",
-        6000
-      );
-    } else if (reasonForRefferal === "1") {
-      NotificationManager.warning(
-        "Please select reasons for referral!",
-        "Response",
-        6000
-      );
-    } else if (!selectProvince.length > 0) {
-      NotificationManager.warning("Please select province!", "Response", 6000);
-    } else if (!selectDistrict.length > 0) {
-      NotificationManager.warning("Please select district!", "Response", 6000);
-    } else if (!facilityTransfer.length > 0) {
-      NotificationManager.warning("Please select facility!", "Response", 6000);
-    } else {
-      /**
-       *   @param form
-       */
-
-      const transferParams = {
-        uuid: clientUuid,
-        fname: clientFirstName,
-        lname: clientLastName,
-        nupn: nupn,
-        art: art,
-        staff: clinicianTransfer,
-        title: title,
-        phone: clinicianPhone,
-        hmis: hmis,
-        to: facilityTransfer,
-        clientphone: clientPhone,
-        name: sessionStorage.getItem("name"),
-        comment: transferComment,
-      };
-
-      /**
-       * @param axios request
-       */
-
-      NotificationManager.success("Submitting request...", "Response", 6000);
-
-      const request = await axios
-        .post(`api/v1/facility/client/transfer`, transferParams)
-        .then((serverResponse) => {
-          NotificationManager.success(
-            "Patient transfer successful!",
-            "Response",
-            6000
-          );
-          setTransferModal(false);
-          window.open(`https://card.v2.smart-umodzi.com?type=2&hmis=${hmis}`);
-        })
-        .catch((serverErrorResponse) => {
-          NotificationManager.error(
-            serverErrorResponse.message,
-            "Response",
-            6000
-          );
-        });
-      if (request.data.status === 200) {
-        NotificationManager.success(
-          "Client transfered succesfully!!",
-          "Response",
-          6000
-        );
-        setTransferModal(false);
-      } else if (request.data.status === 401) {
-        NotificationManager.warning(
-          "Client transfered already!!",
-          "Response",
-          5000
-        );
-        setTransferModal(false);
-      }
-    }
-  };
-  const [reasonForRefferal, setReasonForReferral] = React.useState("1");
+  // const [templateData, setTemplateData] = React.useState("op");
   const [capturedBiometricData, setCapturedBiometricData] =
     React.useState("false");
   const [messageResponse, setMessageResponse] = React.useState(false);
@@ -253,49 +102,17 @@ const Search = () => {
   const [isSearchingFingerPrint, setIsSearchingFingerPrint] =
     React.useState(false);
 
-  //finger one
-  const [firstFinger, setFirstFinger] = React.useState(false);
-  //finger two
-  const [secondFinger, setSecondFinger] = React.useState(false);
-  //finger three
-  const [thirdFinger, setThirdFinger] = React.useState(false);
-  //finger to scan
-  const [markFirstFinger, setMarkFirstFinger] = React.useState(false);
-  const [markSecondFinger, setMarkSecondFinger] = React.useState(false);
-  const [markThirdFinger, setMarkThirdFinger] = React.useState(false);
-
-  const openFingerprintReader = async () => {
-    const request = await axios.post(Biometric.Source, Biometric.settings);
-    const capturedFinger = request.data;
-    if (capturedFinger.CloudScanrStatus.Success) {
-      if (firstFinger) {
-        setMarkFirstFinger(true);
-      }
-      if (secondFinger) {
-        setMarkSecondFinger(true);
-      }
-      if (thirdFinger) {
-        setMarkThirdFinger(true);
-      }
-    }
-  };
-
-  const IdentifyFingerPrint = async () => {
-    const request = await processBiometric.post(Biometric.identify.Api, {
-      CustomerKey: "1848CF9353844080B58154394CA960A6",
-      EngineName: "FPFF02",
-      Format: "ISO",
-      CaptureOperationName: "IDENTIFY",
-      QuickScan: true,
-      BiometricXml: capturedBiometricData,
-      AppKey: "b0a1b0359bbe485fa7d7869ee8a7d5ab",
-      SecretKey: "VNEP7lBLhYkvc5ES3loiEE/Fqs4=",
-    });
-    console.log(request.data);
-  };
-
   const CaptureBiometricFinger = async () => {
-    const request = await axios.post(Biometric.Source, Biometric.settings);
+    const request = await axios.post(
+      "http://localhost:15896/api/CloudScanr/FPCapture",
+      {
+        CustomerKey: "1848CF9353844080B58154394CA960A6",
+        CaptureType: "SingleCapture",
+        CaptureMode: "TemplateOnly",
+        QuickScan: false,
+      }
+    );
+
     const CapturedBiometrics = request.data;
     setCapturedBiometricData(CapturedBiometrics.TemplateData);
     setMessageResponse(CapturedBiometrics.CloudScanrStatus.Message);
@@ -303,7 +120,6 @@ const Search = () => {
       return false;
     }
   };
-
   useEffect(() => {
     if (capturedBiometricData === "false") {
       return false;
@@ -414,7 +230,6 @@ const Search = () => {
               setClientPhone(props.record.mobile_phone_number);
               setClientDob(props.record.date_of_birth);
               setClientSex(props.record.sex);
-              setClientFacility(props.record.current_facility);
             }}
             variant="primary"
             className="btn-sm"
@@ -498,7 +313,6 @@ const Search = () => {
   const [clientPhone, setClientPhone] = React.useState("");
   const [clientDob, setClientDob] = React.useState("");
   const [clientSex, setClientSex] = React.useState("");
-  const [clientFacility, setClientFacility] = React.useState("");
 
   // update details
   const [updateFn, setUpdateFn] = React.useState(clientFirstName);
@@ -564,7 +378,6 @@ const Search = () => {
       `https://card.v2.smart-umodzi.com?hmis=${hmis}&name=${name}&nupn=${nupn}&art=${art}&fac=${fac}&fac_ph=${fac_phone}`
     );
   };
-
   const [first, setFirst] = React.useState("null");
   const [last, setLast] = React.useState("null");
   const [phone, setPhone] = React.useState("null");
@@ -575,7 +388,14 @@ const Search = () => {
   const [contactModal, setContactModal] = React.useState(false);
   const [verifyOtp, setVerifyOtp] = React.useState(false);
   const [otp, setOtp] = React.useState("");
+  // transfer
+  const [province, setProvince] = useProvince([]);
 
+  const [district, setDistrict] = React.useState(true);
+  const [selectDistrict, setSelectDistrict] = React.useState(false);
+  const [selectProvince, setSelectProvince] = React.useState(false);
+  const [facility, setFacility] = React.useState([]);
+  const [facilityTransfer, setFacilityTransfer] = React.useState("");
   const optVerification = async () => {
     setConfirmNew(false);
     const request = await axios.get(`api/v1/verify/${otp}/${phone}`);
@@ -615,110 +435,40 @@ const Search = () => {
   };
   // appointments create
 
-  const [appointmentType, setAppointmentType] = React.useState("");
-  const [timeBooked, setTimeBooked] = React.useState("");
-  const [dateBooked, setDateBooked] = React.useState("");
-  const [clinicianAssigned, setClinicianAssigned] = React.useState("");
-  const [communityAssigned, setCommunityAssigned] = React.useState("");
-  const [updateContact, setUpdateContact] = React.useState("");
-  const [comments, setComments] = React.useState("");
+  const [appointmentType, setAppointmentType] = React.useState("empty");
+  const [timeBooked, setTimeBooked] = React.useState("empty");
+  const [dateBooked, setDateBooked] = React.useState("empty");
+  const [clinicianAssigned, setClinicianAssigned] = React.useState("empty");
+  const [communityAssigned, setCommunityAssigned] = React.useState("empty");
+  const [updateContact, setUpdateContact] = React.useState("empty");
+  const [comments, setComments] = React.useState("empty");
+
+  // appointment modal
   const [appointmentModal, setAppointmentModal] = React.useState(false);
   const hmis = sessionStorage.getItem("hmis");
-
-  // appointments
-  const param = {
-    type: appointmentType,
-    date: dateBooked,
-    time: timeBooked,
-    clinician: clinicianAssigned,
-    chw: communityAssigned,
-    comments: comments,
-    update: updateContact,
-    hmis: hmis,
-    id: clientUuid,
-  };
-
-  // message to send to facility
-  const name = sessionStorage.getItem("name");
-
-  const [notificationMessage, setNotificationMessage] = React.useState("");
-
-  const sendNotification = async () => {
-    const message =
-      clientFirstName +
-      " " +
-      clientLastName +
-      "  has accessed a pharmacy pick up at " +
-      name;
-    const request = await axios
-      .post("api/v1/notify/facility", {
-        facility: clientFacility,
-        message: message,
-      })
-      .then((reponse) => {
-        NotificationManager.success(
-          "Parent facility has been notified accordingly!",
-          "Response",
-          3000
-        );
-      })
-      .catch((error) => {
-        NotificationManager.warning(error.message, "Response", 6000);
-      });
-  };
-
   const bookAppointment = async () => {
-    if (appointmentType === 0) {
-      NotificationManager.warning(
-        "Please select appointment type!!",
-        "Response",
-        6000
-      );
-    } else if (dateBooked === "") {
-      NotificationManager.warning(
-        "Please select next appointment date!!",
-        "Response",
-        6000
-      );
-    } else if (clinicianAssigned === "") {
-      NotificationManager.warning(
-        "Please  assign clinician!!",
-        "Response",
-        6000
-      );
-    } else if (communityAssigned === "") {
-      NotificationManager.warning(
-        "Please  assign comunity health worker!!",
-        "Response",
-        6000
-      );
-    } else {
-      NotificationManager.success(
-        "Appointment submitted successfully",
-        "Response",
-        3000
-      );
+    const request = await axios.get(
+      `/api/v1/create/appointment/${clientUuid}/${appointmentType}/${timeBooked}/${dateBooked}/${clinicianAssigned}/${communityAssigned}/${comments}/${updateContact}/${hmis}`
+    );
+
+    if (request.data.status === 200) {
+      Swal.fire({
+        title: "Success",
+        text: request.data.message,
+        icon: "success",
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
       setAppointmentModal(false);
-      const request = await axios
-        .post("api/v1/create/appointment", param)
-        .then((response) => {
-          if (response.data.status === 200) {
-            if (clientFacility !== hmis) {
-              //notify facility
-              sendNotification();
-            }
-          } else if (request.data.status === 401) {
-            NotificationManager.success(
-              "Appointment could not be created!",
-              "Response",
-              6000
-            );
-            setAppointmentModal(false);
-          }
-        })
-        .catch((error) => {
-          NotificationManager.warning(error, "Response", 6000);
-        });
+    } else if (request.data.status === 401) {
+      Swal.fire({
+        title: "Error",
+        text: request.data.message,
+        icon: "error",
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
+      setAppointmentModal(false);
     }
   };
   // emtct client
@@ -787,57 +537,28 @@ const Search = () => {
   const [cause, setCause] = React.useState("null");
   const [dateDeath, setDateDeath] = React.useState("null");
   const [placeDeath, setPlaceDeath] = React.useState("null");
-
   const deathBtn = async () => {
-    if (reportedBy === "") {
-      NotificationManager.warning(
-        "Please  specify reported by!!",
-        "Response",
-        6000
-      );
-    } else if (cause === "") {
-      NotificationManager.warning(
-        "Please  specify cause of death!!",
-        "Response",
-        6000
-      );
-    } else if (dateDeath === "") {
-      NotificationManager.warning(
-        "Please  specify date of birth!!",
-        "Response",
-        6000
-      );
-    } else if (placeDeath === "") {
-      NotificationManager.warning(
-        "Please  specify where death occured!!",
-        "Response",
-        6000
-      );
+    const request = await axios.get(
+      `api/v1/client/mortality/${reportedBy}/${cause}/${dateDeath}/${placeDeath}/${clientUuid}`
+    );
+    if (request.status === 200) {
+      Swal.fire({
+        Icon: "success",
+        title: "Success",
+        text: request.data.message,
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
     } else {
-      const request = await axios
-        .post("api/v1/client/mortality", {
-          reporter: reportedBy,
-          cause: cause,
-          date: dateDeath,
-          place: placeDeath,
-          client: clientUuid,
-          hmis: hmis,
-        })
-        .then((response) => {})
-        .catch((error) => {
-          NotificationManager.warning("" + error, "Response", 6000);
-        });
-      NotificationManager.success(
-        "Death recorded successfully!!",
-        "Response",
-        6000
-      );
+      Swal.fire({
+        Icon: "error",
+        title: "Error",
+        text: request.data.message,
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
     }
   };
-  const onLoad = (marker) => {
-    console.log("marker: ", marker);
-  };
-
   const emtctBtns = (props) => {
     return (
       <>
@@ -949,12 +670,51 @@ const Search = () => {
     }
   };
   // transfer clinets
+  // modal
+  const [transferModal, setTransferModal] = React.useState(false);
+  const [clinicianTransfer, setClinicianTransfer] = React.useState("");
+  const [title, setTitle] = React.useState("");
+  const [clinicianPhone, setClinicianPhone] = React.useState("");
+  // const [facility, setFacility] = React.useState("");
 
+  const btnTransfer = async () => {
+    const hmis = sessionStorage.getItem("hmis");
+    const request = await axios.get(
+      `api/v1/facility/client/transfer/${hmis}/${art}/${nupn}/${clientFirstName}/${clientLastName}/${clinicianTransfer}/${title}/${clinicianPhone}/${facilityTransfer}/${clientUuid}`
+    );
+    if (request.data.status === 200) {
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: request.data.message,
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
+      setTransferModal(false);
+    } else if (request.data.status === 401) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: request.data.message,
+        confirmButtonText: "Exit",
+        confirmButtonColor: "#007bbf",
+      });
+      setTransferModal(false);
+    }
+  };
   // baby data
-  useEffect(() => {
-    sendMissedAppointmentsReminder();
-    sendPendingAppointmentsReminder();
-  }, []);
+  useEffect(
+    (babyID) => {
+      if (babyID) {
+        async function getBabyAppointments() {
+          const request = await axios.get(`api/v1/baby/appointments/${babyID}`);
+          setViewBabyAppointment(request.data.appointments);
+        }
+        getBabyAppointments();
+      }
+    },
+    [babyID, clientUuid]
+  );
 
   useEffect(() => {
     // baby appointments
@@ -1011,9 +771,6 @@ const Search = () => {
       const request = await axios.get(
         `api/v1/facility/district/${selectProvince}`
       );
-      if (request.data.districts.length > 0) {
-        setDistrictState(false);
-      }
       setDistrict(request.data.districts);
       setSelectDistrict(true);
     }
@@ -1025,9 +782,6 @@ const Search = () => {
       const request = await axios.get(
         `api/v1/facility/facility/${selectDistrict}`
       );
-      if (request.data.facilities.length > 0) {
-        setFacilityState(false);
-      }
       setFacility(request.data.facilities);
     }
     facility();
@@ -1180,147 +934,76 @@ const Search = () => {
   // trackingFiedls
 
   //new client
-  const [newArtNumber, setNewArtNumber] = React.useState("");
-  const [newNupn, setNewNupn] = React.useState("");
-  const [newFname, setNewFname] = React.useState("");
-  const [newLname, setNewLname] = React.useState("");
-  const [newDob, setNewDob] = React.useState("");
-  const [newGender, setNewGender] = React.useState("");
-  const [newNrc, setNewNrc] = React.useState("");
-  const [newPhone, setNewPhone] = React.useState("");
-  const [newEmail, setNewEmail] = React.useState("");
-  const [newAddress, setNewAddress] = React.useState("");
+  const [newArtNumber, setNewArtNumber] = React.useState("null");
+  const [newNupn, setNewNupn] = React.useState("null");
+  const [newFname, setNewFname] = React.useState("null");
+  const [newLname, setNewLname] = React.useState("null");
+  const [newDob, setNewDob] = React.useState("null");
+  const [newGender, setNewGender] = React.useState("null");
+  const [newNrc, setNewNrc] = React.useState("null");
+  const [newPhone, setNewPhone] = React.useState("null");
+  const [newEmail, setNewEmail] = React.useState("null");
+  const [newAddress, setNewAddress] = React.useState("null");
   const [newClientModal, setNewClientModal] = React.useState(false);
   const [confirmNew, setConfirmNew] = React.useState(false);
-
   const VerifyNumber = async () => {
     const request = await axios.get(`api/v1/verify/${otp}/${newPhone}`);
     if (request.data.status === 200) {
-      NotificationManager.success(
-        "Phone number verified successfully!",
-        "Response",
-        3000
-      );
+      Swal.fire({
+        title: "Success",
+        icon: "success",
+        text: request.data.message,
+      });
     } else {
-      NotificationManager.warning(
-        "OTP is invalid!",
-        "Verification error",
-        3000
-      );
+      Swal.fire({
+        title: "Error",
+        icon: "error",
+        text: request.data.message,
+      });
     }
   };
-
-  /**
-   * Creating a
-   * new client
-   *
-   *
-   */
-  const RegisterClient = {
-    artnumber: newArtNumber,
-    nupn: newNupn,
-    firstname: newFname,
-    lastname: newLname,
-    dateofbirth: newDob,
-    gender: newGender,
-    nrc: newNrc,
-    email: newEmail,
-    phone: newPhone,
-    address: newAddress,
-    hmis: hmis,
-  };
-
   const addClient = async () => {
-    if (newArtNumber === "") {
-      NotificationManager.warning(
-        "Please specify Art Number!",
-        "Validation Error",
-        3000
-      );
-    } else if (newNupn === "") {
-      NotificationManager.warning(
-        "Please specify Nupn number!",
-        "Validation Error",
-        3000
-      );
-    } else if (newFname === "") {
-      NotificationManager.warning(
-        "Please specify First name!",
-        "Validation Error",
-        3000
-      );
-    } else if (newLname === "") {
-      NotificationManager.warning(
-        "Please sepcify Last name!",
-        "Validation Error",
-        3000
-      );
-    } else if (newDob === "") {
-      NotificationManager.warning(
-        "Please specify date of birth!",
-        "Validation Error",
-        3000
-      );
-    } else if (newGender === 0) {
-      NotificationManager.warning(
-        "Please specify gender",
-        "Validation Error",
-        3000
-      );
-    } else if (newNrc.length > 9) {
-      NotificationManager.warning(
-        "Please ensure you remove back slashes on the NRC number!",
-        "Validation Error",
-        3000
-      );
-    } else if (newAddress === "") {
-      NotificationManager.warning(
-        "Please specify physical address!",
-        "Validation Error",
-        3000
-      );
-    } else {
-      NotificationManager.success(
-        "Client successfully created!",
-        "Response",
-        3000
-      );
-      const request = await axios.post(
-        "/api/v1/facility/new/form",
-        RegisterClient
-      );
-      if (request.data.status === 200) {
-      } else if (request.data.status === 401) {
-        NotificationManager.warning("Something went wrong!", "Response", 3000);
-      } else if (request.data.status === 201) {
-        //confirm phone number show modak
-        setVerifyOtp(true);
-        setConfirmNew(true);
-      }
-    }
-  };
-  const [response, setResponse] = React.useState(null);
-  const directionsCallback = (response) => {
-    console.log(response);
-
-    if (response !== null) {
-      if (response.status === "OK") {
-        setResponse(response);
-      } else {
-        console.log("response: ", response);
-      }
+    const request = await axios.get(
+      `/api/v1/facility/new/form/${newArtNumber}/${newNupn}/${newFname}/${newLname}/${newDob}/${newGender}/${newNrc}/${newPhone}/${newEmail}/${newAddress}/${hmis}`
+    );
+    if (request.data.status === 200) {
+      Swal.fire({
+        title: "Success",
+        icon: "success",
+        text: request.data.message,
+        confirmButtonColor: "#007bbf",
+        confirmButtonText: "Exit",
+      });
+    } else if (request.data.status === 401) {
+      Swal.fire({
+        title: "Error",
+        icon: "error",
+        text: request.data.message,
+        confirmButtonColor: "#007bbf",
+        confirmButtonText: "Exit",
+      });
+    } else if (request.data.status === 201) {
+      //confirm phone number show modak
+      setVerifyOtp(true);
+      setConfirmNew(true);
     }
   };
 
   return (
     <>
-      <h4
-        className=" h5 componen "
-        style={{ margin: "auto", textAlign: "center", marginTop: 15 }}
-      >
-        <i className="fas fa-search "></i>
+      <h4 className="text-secondary h5 component ">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          fill="currentColor"
+          className="text-primary bi bi-grid-3x3-gap-fill"
+          viewBox="0 0 16 16"
+        >
+          <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V7zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z" />
+        </svg>
         {"  "}
-        <strong>Find Recipients</strong>{" "}
+        Find Recipients{" "}
         {selectedClient ? (
           <></>
         ) : (
@@ -1513,43 +1196,21 @@ const Search = () => {
                       onClick={() => {
                         setSelectedClient(false);
                       }}
-                      className="btn-sm"
                       variant="outline-primary"
+                      className="btn-sm"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
                         fill="currentColor"
-                        className="text-white bi bi-arrow-left-circle-fill"
+                        className="text-primary bi bi-arrow-left-circle-fill"
                         viewBox="0 0 16 16"
                       >
                         <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z" />
                       </svg>{" "}
                       Back
                     </Button>
-                    {/* <Button
-                      className="btn-sm"
-                      variant="outline-primary"
-                      onClick={() => {
-                        setMap(true);
-                      }}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        class="bi bi-geo-fill text-primary"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.319 1.319 0 0 0-.37.265.301.301 0 0 0-.057.09V14l.002.008a.147.147 0 0 0 .016.033.617.617 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.619.619 0 0 0 .146-.15.148.148 0 0 0 .015-.033L12 14v-.004a.301.301 0 0 0-.057-.09 1.318 1.318 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465-1.281 0-2.462-.172-3.34-.465-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411z"
-                        />
-                      </svg>
-                      Directions on map
-                    </Button> */}
                     <Button
                       onClick={() => {
                         setTransferModal(true);
@@ -1561,13 +1222,13 @@ const Search = () => {
                         width="16"
                         height="16"
                         fill="currentColor"
-                        className="text-white bi bi-exclamation-circle-fill"
+                        className="text-white bi bi-truck"
                         viewBox="0 0 16 16"
                       >
-                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 4a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 4zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
-                      </svg>{" "}
-                      {"  "}
-                      Patent Status
+                        <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+                      </svg>
+                      {"   "}
+                      Transfer
                     </Button>
                     <Button
                       onClick={() => {
@@ -1798,8 +1459,8 @@ const Search = () => {
                     </Tab>
                     <Tab title="Mortality" eventKey="mortality">
                       <Container>
-                        {" "}
-                        <h5 className="text-muted component">
+                        <br />
+                        <h5 className="text-muted">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="20"
@@ -1878,227 +1539,114 @@ const Search = () => {
             }}
             activeKey={key}
           >
-            <Tab
-              eventKey="facility"
-              className="bg-white padding-0"
-              style={{ minHeight: 500 }}
-            >
-              <div style={{ margin: "auto", display: "none" }}>
-                <h5 className="component">
-                  <Button className="float-end btn-sm">Add Recipient</Button>
-                </h5>
-                <div className="tab-menu-btns">
-                  <Alert
-                    variant="primary"
-                    style={{ width: "100%", marginTop: 50 }}
-                  >
-                    <i class="fas fa-info-circle"></i>
-                    {"   "}Select <strong>search modulities</strong> to continue
-                  </Alert>
-                </div>
-                <div className="tab-menu-btns ">
-                  <div
-                    className="menu-tab bg-white"
-                    onClick={() => {
-                      setBioScan(true);
-                    }}
-                  >
-                    <center>
-                      <i className="fas fa-fingerprint fa-5x text-secondary"></i>
-                    </center>
-                    <h5 class="text-primary">Biometric ID</h5>
-                  </div>
-                  <div className="menu-tab">
-                    {"  "}
-                    <center>
-                      <i className="fas fa-barcode fa-5x text-secondary"></i>
-                    </center>
-                    <h5 class="text-primary">Barcode /QR</h5>
-                  </div>
-                  <div className="menu-tab">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="80"
-                      height="80"
-                      fill="currentColor"
-                      className="bi bi-activity text-secondary"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M6 2a.5.5 0 0 1 .47.33L10 12.036l1.53-4.208A.5.5 0 0 1 12 7.5h3.5a.5.5 0 0 1 0 1h-3.15l-1.88 5.17a.5.5 0 0 1-.94 0L6 3.964 4.47 8.171A.5.5 0 0 1 4 8.5H.5a.5.5 0 0 1 0-1h3.15l1.88-5.17A.5.5 0 0 1 6 2Z"
-                      />
-                    </svg>
-
-                    <h5 class="text-primary">Treatment ID</h5>
-                  </div>
-                </div>
-                <div className="tab-menu-btns">
-                  <div className="menu-tab">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="80"
-                      height="80"
-                      fill="currentColor"
-                      className="bi bi-card-text"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z" />
-                      <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z" />
-                    </svg>
-                    <h5 class="text-primary">Passport / ID</h5>
-                  </div>
-                  <div className="menu-tab">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="80"
-                      height="80"
-                      fill="currentColor"
-                      className="bi bi-telephone-plus"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328zM1.884.511a1.745 1.745 0 0 1 2.612.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z" />
-                      <path
-                        fill-rule="evenodd"
-                        d="M12.5 1a.5.5 0 0 1 .5.5V3h1.5a.5.5 0 0 1 0 1H13v1.5a.5.5 0 0 1-1 0V4h-1.5a.5.5 0 0 1 0-1H12V1.5a.5.5 0 0 1 .5-.5z"
-                      />
-                    </svg>
-                    <h5 class="text-primary">Phone Num.</h5>
-                  </div>
-                  <div
-                    className="menu-tab"
-                    onClick={() => {
-                      setNewClientModal(true);
-                    }}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="80"
-                      height="80"
-                      fill="currentColor"
-                      className="bi bi-person-plus"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
-                      <path
-                        fill-rule="evenodd"
-                        d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"
-                      />
-                    </svg>
-                    <h5 class="text-primary">Add Client</h5>
-                  </div>
-                  <h5 className="component"></h5>
-                </div>
-              </div>
+            <Tab title={<>Search Facility</>} eventKey="facility">
+              <h5 className="component">
+                <i className="fas fa-users-cog fa-fw"></i> Search all clients
+                accessing treatment
+                <Button
+                  className="float-end btn-sm"
+                  onClick={() => {
+                    setNewClientModal(true);
+                  }}
+                >
+                  Add Recipient
+                </Button>
+              </h5>
               <Container>
-                <Container>
-                  <div className="form-search">
-                    <div className="row">
-                      <div className="col-md-12">
-                        <h5>
-                          <Button
-                            className="float-end"
-                            onClick={() => {
-                              setNewClientModal(true);
-                            }}
-                          >
-                            {" "}
-                            Add Recipient
-                          </Button>
-                        </h5>
-                      </div>
-                      <div className="col-md-5 search-buttons">
-                        {/* search buttons */}
-                        <h5
-                          className="text-secondary"
-                          style={{ fontSize: "14px" }}
+                <div className="form-search">
+                  <div className="row">
+                    <div className="col-md-5 search-buttons">
+                      {/* search buttons */}
+                      <h5
+                        className="text-secondary"
+                        style={{ fontSize: "14px" }}
+                      >
+                        Click button to search
+                      </h5>
+                      <div className="d-grid gap-2">
+                        <Button
+                          onClick={() => {
+                            setSearchBarcode(false);
+                            setSearchById(false);
+                            setSearchByNames(true);
+                            setSearchByPhone(false);
+                          }}
+                          // className="btn-sm "
+                          variant="outline-secondary"
                         >
-                          Click button to search
-                        </h5>
-                        <div className="d-grid gap-2">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            fill="currentColor"
+                            className="bi bi-person-circle"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                            <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
+                          </svg>{" "}
+                          {"  "}
+                          Search By Names
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setSearchBarcode(true);
+                            setSearchById(false);
+                            setSearchByNames(false);
+                            setSearchByPhone(false);
+                          }}
+                          // className="btn-sm "
+                          variant="outline-secondary"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="28"
+                            height="28"
+                            fill="currentColor"
+                            className=" bi bi-upc"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M3 4.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-7zm3 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7z" />
+                          </svg>
+                          {"  "}
+                          Barcode scan
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            CaptureBiometricFinger();
+                          }}
+                          variant="outline-secondary"
+                        >
+                          {" "}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="28"
+                            height="28"
+                            fill="currentColor"
+                            class="bi bi-fingerprint"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M8.06 6.5a.5.5 0 0 1 .5.5v.776a11.5 11.5 0 0 1-.552 3.519l-1.331 4.14a.5.5 0 0 1-.952-.305l1.33-4.141a10.5 10.5 0 0 0 .504-3.213V7a.5.5 0 0 1 .5-.5Z" />
+                            <path d="M6.06 7a2 2 0 1 1 4 0 .5.5 0 1 1-1 0 1 1 0 1 0-2 0v.332c0 .409-.022.816-.066 1.221A.5.5 0 0 1 6 8.447c.04-.37.06-.742.06-1.115V7Zm3.509 1a.5.5 0 0 1 .487.513 11.5 11.5 0 0 1-.587 3.339l-1.266 3.8a.5.5 0 0 1-.949-.317l1.267-3.8a10.5 10.5 0 0 0 .535-3.048A.5.5 0 0 1 9.569 8Zm-3.356 2.115a.5.5 0 0 1 .33.626L5.24 14.939a.5.5 0 1 1-.955-.296l1.303-4.199a.5.5 0 0 1 .625-.329Z" />
+                            <path d="M4.759 5.833A3.501 3.501 0 0 1 11.559 7a.5.5 0 0 1-1 0 2.5 2.5 0 0 0-4.857-.833.5.5 0 1 1-.943-.334Zm.3 1.67a.5.5 0 0 1 .449.546 10.72 10.72 0 0 1-.4 2.031l-1.222 4.072a.5.5 0 1 1-.958-.287L4.15 9.793a9.72 9.72 0 0 0 .363-1.842.5.5 0 0 1 .546-.449Zm6 .647a.5.5 0 0 1 .5.5c0 1.28-.213 2.552-.632 3.762l-1.09 3.145a.5.5 0 0 1-.944-.327l1.089-3.145c.382-1.105.578-2.266.578-3.435a.5.5 0 0 1 .5-.5Z" />
+                            <path d="M3.902 4.222a4.996 4.996 0 0 1 5.202-2.113.5.5 0 0 1-.208.979 3.996 3.996 0 0 0-4.163 1.69.5.5 0 0 1-.831-.556Zm6.72-.955a.5.5 0 0 1 .705-.052A4.99 4.99 0 0 1 13.059 7v1.5a.5.5 0 1 1-1 0V7a3.99 3.99 0 0 0-1.386-3.028.5.5 0 0 1-.051-.705ZM3.68 5.842a.5.5 0 0 1 .422.568c-.029.192-.044.39-.044.59 0 .71-.1 1.417-.298 2.1l-1.14 3.923a.5.5 0 1 1-.96-.279L2.8 8.821A6.531 6.531 0 0 0 3.058 7c0-.25.019-.496.054-.736a.5.5 0 0 1 .568-.422Zm8.882 3.66a.5.5 0 0 1 .456.54c-.084 1-.298 1.986-.64 2.934l-.744 2.068a.5.5 0 0 1-.941-.338l.745-2.07a10.51 10.51 0 0 0 .584-2.678.5.5 0 0 1 .54-.456Z" />
+                            <path d="M4.81 1.37A6.5 6.5 0 0 1 14.56 7a.5.5 0 1 1-1 0 5.5 5.5 0 0 0-8.25-4.765.5.5 0 0 1-.5-.865Zm-.89 1.257a.5.5 0 0 1 .04.706A5.478 5.478 0 0 0 2.56 7a.5.5 0 0 1-1 0c0-1.664.626-3.184 1.655-4.333a.5.5 0 0 1 .706-.04ZM1.915 8.02a.5.5 0 0 1 .346.616l-.779 2.767a.5.5 0 1 1-.962-.27l.778-2.767a.5.5 0 0 1 .617-.346Zm12.15.481a.5.5 0 0 1 .49.51c-.03 1.499-.161 3.025-.727 4.533l-.07.187a.5.5 0 0 1-.936-.351l.07-.187c.506-1.35.634-2.74.663-4.202a.5.5 0 0 1 .51-.49Z" />
+                          </svg>
+                          Biometric Scan
+                        </Button>
+
+                        <ButtonGroup>
                           <Button
                             onClick={() => {
                               setSearchBarcode(false);
                               setSearchById(false);
-                              setSearchByNames(true);
-                              setSearchByPhone(false);
-                            }}
-                            // className="btn-sm "
-                            variant="outline-secondary"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              fill="currentColor"
-                              className="bi bi-person-circle"
-                              viewBox="0 0 16 16"
-                            >
-                              <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
-                              <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
-                            </svg>{" "}
-                            {"  "}
-                            Search By Names
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              setSearchBarcode(true);
-                              setSearchById(false);
                               setSearchByNames(false);
-                              setSearchByPhone(false);
+                              setSearchByPhone(true);
                             }}
-                            // className="btn-sm "
-                            variant="outline-secondary"
+                            className="btn-sm"
+                            variant="outline-primary"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="28"
-                              height="28"
-                              fill="currentColor"
-                              className=" bi bi-upc"
-                              viewBox="0 0 16 16"
-                            >
-                              <path d="M3 4.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-7zm3 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7z" />
-                            </svg>
-                            {"  "}
-                            Barcode scan
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              CaptureBiometricFinger();
-                            }}
-                            variant="outline-secondary"
-                          >
-                            {" "}
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="28"
-                              height="28"
-                              fill="currentColor"
-                              className="bi bi-fingerprint"
-                              viewBox="0 0 16 16"
-                            >
-                              <path d="M8.06 6.5a.5.5 0 0 1 .5.5v.776a11.5 11.5 0 0 1-.552 3.519l-1.331 4.14a.5.5 0 0 1-.952-.305l1.33-4.141a10.5 10.5 0 0 0 .504-3.213V7a.5.5 0 0 1 .5-.5Z" />
-                              <path d="M6.06 7a2 2 0 1 1 4 0 .5.5 0 1 1-1 0 1 1 0 1 0-2 0v.332c0 .409-.022.816-.066 1.221A.5.5 0 0 1 6 8.447c.04-.37.06-.742.06-1.115V7Zm3.509 1a.5.5 0 0 1 .487.513 11.5 11.5 0 0 1-.587 3.339l-1.266 3.8a.5.5 0 0 1-.949-.317l1.267-3.8a10.5 10.5 0 0 0 .535-3.048A.5.5 0 0 1 9.569 8Zm-3.356 2.115a.5.5 0 0 1 .33.626L5.24 14.939a.5.5 0 1 1-.955-.296l1.303-4.199a.5.5 0 0 1 .625-.329Z" />
-                              <path d="M4.759 5.833A3.501 3.501 0 0 1 11.559 7a.5.5 0 0 1-1 0 2.5 2.5 0 0 0-4.857-.833.5.5 0 1 1-.943-.334Zm.3 1.67a.5.5 0 0 1 .449.546 10.72 10.72 0 0 1-.4 2.031l-1.222 4.072a.5.5 0 1 1-.958-.287L4.15 9.793a9.72 9.72 0 0 0 .363-1.842.5.5 0 0 1 .546-.449Zm6 .647a.5.5 0 0 1 .5.5c0 1.28-.213 2.552-.632 3.762l-1.09 3.145a.5.5 0 0 1-.944-.327l1.089-3.145c.382-1.105.578-2.266.578-3.435a.5.5 0 0 1 .5-.5Z" />
-                              <path d="M3.902 4.222a4.996 4.996 0 0 1 5.202-2.113.5.5 0 0 1-.208.979 3.996 3.996 0 0 0-4.163 1.69.5.5 0 0 1-.831-.556Zm6.72-.955a.5.5 0 0 1 .705-.052A4.99 4.99 0 0 1 13.059 7v1.5a.5.5 0 1 1-1 0V7a3.99 3.99 0 0 0-1.386-3.028.5.5 0 0 1-.051-.705ZM3.68 5.842a.5.5 0 0 1 .422.568c-.029.192-.044.39-.044.59 0 .71-.1 1.417-.298 2.1l-1.14 3.923a.5.5 0 1 1-.96-.279L2.8 8.821A6.531 6.531 0 0 0 3.058 7c0-.25.019-.496.054-.736a.5.5 0 0 1 .568-.422Zm8.882 3.66a.5.5 0 0 1 .456.54c-.084 1-.298 1.986-.64 2.934l-.744 2.068a.5.5 0 0 1-.941-.338l.745-2.07a10.51 10.51 0 0 0 .584-2.678.5.5 0 0 1 .54-.456Z" />
-                              <path d="M4.81 1.37A6.5 6.5 0 0 1 14.56 7a.5.5 0 1 1-1 0 5.5 5.5 0 0 0-8.25-4.765.5.5 0 0 1-.5-.865Zm-.89 1.257a.5.5 0 0 1 .04.706A5.478 5.478 0 0 0 2.56 7a.5.5 0 0 1-1 0c0-1.664.626-3.184 1.655-4.333a.5.5 0 0 1 .706-.04ZM1.915 8.02a.5.5 0 0 1 .346.616l-.779 2.767a.5.5 0 1 1-.962-.27l.778-2.767a.5.5 0 0 1 .617-.346Zm12.15.481a.5.5 0 0 1 .49.51c-.03 1.499-.161 3.025-.727 4.533l-.07.187a.5.5 0 0 1-.936-.351l.07-.187c.506-1.35.634-2.74.663-4.202a.5.5 0 0 1 .51-.49Z" />
-                            </svg>
-                            Biometric Scan
-                          </Button>
-
-                          <ButtonGroup>
-                            <Button
-                              onClick={() => {
-                                setSearchBarcode(false);
-                                setSearchById(false);
-                                setSearchByNames(false);
-                                setSearchByPhone(true);
-                              }}
-                              className="btn-sm"
-                              variant="outline-primary"
-                            >
-                              {/* <svg
+                            {/* <svg
                               xmlns="http://www.w3.org/2000/svg"
                               width="16"
                               height="16"
@@ -2112,19 +1660,19 @@ const Search = () => {
                               />
                             </svg>
                             {"  "} */}
-                              Phone
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                setSearchBarcode(false);
-                                setSearchById(true);
-                                setSearchByNames(false);
-                                setSearchByPhone(false);
-                              }}
-                              variant="secondary"
-                              className="btn-sm"
-                            >
-                              {/* <svg
+                            Phone
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setSearchBarcode(false);
+                              setSearchById(true);
+                              setSearchByNames(false);
+                              setSearchByPhone(false);
+                            }}
+                            variant="secondary"
+                            className="btn-sm"
+                          >
+                            {/* <svg
                               xmlns="http://www.w3.org/2000/svg"
                               width="16"
                               height="16"
@@ -2135,61 +1683,61 @@ const Search = () => {
                               <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z" />
                             </svg>
                             {"  "} */}
-                              Recipient ID
-                            </Button>
-                          </ButtonGroup>
-                        </div>
+                            Recipient ID
+                          </Button>
+                        </ButtonGroup>
                       </div>
-                      <div
-                        style={{ paddingTop: "10px" }}
-                        className="border-left col-md-7"
-                      >
-                        {/* search inputs */}
+                    </div>
+                    <div
+                      style={{ paddingTop: "10px" }}
+                      className="border-left col-md-7"
+                    >
+                      {/* search inputs */}
 
-                        {searchBynames ? (
-                          <>
-                            <h4 className="text-center">
+                      {searchBynames ? (
+                        <>
+                          <h4 className="text-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="60"
+                              height="60"
+                              fill="currentColor"
+                              className="bi bi-people-fill"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                              <path d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z" />
+                              <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+                            </svg>
+                            <br />
+                            Searching by names
+                            <br />
+                          </h4>
+                          <div className="input-icon">
+                            <span className="icon">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                width="60"
-                                height="60"
+                                width="16"
+                                height="16"
                                 fill="currentColor"
-                                className="bi bi-people-fill"
+                                className="bi bi-search"
                                 viewBox="0 0 16 16"
                               >
-                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-                                <path d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z" />
-                                <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                               </svg>
-                              <br />
-                              Searching by names
-                              <br />
-                            </h4>
-                            <div className="input-icon">
-                              <span className="icon">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  className="bi bi-search"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-                                </svg>
-                              </span>
-                              <FormControl
-                                className="form-control-lg"
-                                placeholder="type here...."
-                                style={{
-                                  backgroundColor: "#F4F4F4",
-                                  border: "0px",
-                                }}
-                                onChange={(e) => {
-                                  setId(e.target.value);
-                                }}
-                              />
-                              {/* <input
+                            </span>
+                            <FormControl
+                              className="form-control-lg"
+                              placeholder="type here...."
+                              style={{
+                                backgroundColor: "#F4F4F4",
+                                border: "0px",
+                              }}
+                              onChange={(e) => {
+                                setId(e.target.value);
+                              }}
+                            />
+                            {/* <input
                               type="button"
                               name="biometricCapture"
                               value="Biometric Capture"
@@ -2201,177 +1749,193 @@ const Search = () => {
                               id="templateXML"
                               value=""
                             /> */}
-                            </div>
-                          </>
-                        ) : (
-                          <></>
-                        )}
-                        {searchBarcode ? (
-                          <>
-                            {" "}
-                            <h4 className="text-center">
+                          </div>
+                        </>
+                      ) : (
+                        <></>
+                      )}
+                      {searchBarcode ? (
+                        <>
+                          {" "}
+                          <h4 className="text-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="60"
+                              height="60"
+                              fill="currentColor"
+                              className="bi bi-upc-scan"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M1.5 1a.5.5 0 0 0-.5.5v3a.5.5 0 0 1-1 0v-3A1.5 1.5 0 0 1 1.5 0h3a.5.5 0 0 1 0 1h-3zM11 .5a.5.5 0 0 1 .5-.5h3A1.5 1.5 0 0 1 16 1.5v3a.5.5 0 0 1-1 0v-3a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 1-.5-.5zM.5 11a.5.5 0 0 1 .5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 1 0 1h-3A1.5 1.5 0 0 1 0 14.5v-3a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v3a1.5 1.5 0 0 1-1.5 1.5h-3a.5.5 0 0 1 0-1h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 .5-.5zM3 4.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-7zm3 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7z" />
+                            </svg>
+                            <br />
+                            Scan Barcode
+                            <br />
+                          </h4>
+                          <div className="input-icon">
+                            <span className="icon">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                width="60"
-                                height="60"
+                                width="16"
+                                height="16"
                                 fill="currentColor"
-                                className="bi bi-upc-scan"
+                                className="bi bi-search"
                                 viewBox="0 0 16 16"
                               >
-                                <path d="M1.5 1a.5.5 0 0 0-.5.5v3a.5.5 0 0 1-1 0v-3A1.5 1.5 0 0 1 1.5 0h3a.5.5 0 0 1 0 1h-3zM11 .5a.5.5 0 0 1 .5-.5h3A1.5 1.5 0 0 1 16 1.5v3a.5.5 0 0 1-1 0v-3a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 1-.5-.5zM.5 11a.5.5 0 0 1 .5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 1 0 1h-3A1.5 1.5 0 0 1 0 14.5v-3a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v3a1.5 1.5 0 0 1-1.5 1.5h-3a.5.5 0 0 1 0-1h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 .5-.5zM3 4.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7zm2 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-7zm3 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0v-7z" />
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                               </svg>
-                              <br />
-                              Scan Barcode
-                              <br />
-                            </h4>
-                            <div className="input-icon">
-                              <span className="icon">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  className="bi bi-search"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-                                </svg>
-                              </span>
-                              <FormControl
-                                className="form-control-lg"
-                                placeholder="type here...."
-                                style={{ backgroundColor: "#F4F4F4" }}
-                                onChange={(e) => {
-                                  setId(e.target.value);
-                                }}
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <></>
-                        )}
-                        {searchById ? (
-                          <>
-                            {" "}
-                            <h4 className="text-center">
+                            </span>
+                            <FormControl
+                              className="form-control-lg"
+                              placeholder="type here...."
+                              style={{ backgroundColor: "#F4F4F4" }}
+                              onChange={(e) => {
+                                setId(e.target.value);
+                              }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <></>
+                      )}
+                      {searchById ? (
+                        <>
+                          {" "}
+                          <h4 className="text-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="60"
+                              height="60"
+                              fill="currentColor"
+                              className="bi bi-123"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961h1.174Zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057h1.138Zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75v.96Z" />
+                            </svg>
+                            {"  "}
+                            <br />
+                            Searching by Art / Nupn
+                            <br />
+                          </h4>
+                          <div className="input-icon">
+                            <span className="icon">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                width="60"
-                                height="60"
+                                width="16"
+                                height="16"
                                 fill="currentColor"
-                                className="bi bi-123"
+                                className="bi bi-search"
                                 viewBox="0 0 16 16"
                               >
-                                <path d="M2.873 11.297V4.142H1.699L0 5.379v1.137l1.64-1.18h.06v5.961h1.174Zm3.213-5.09v-.063c0-.618.44-1.169 1.196-1.169.676 0 1.174.44 1.174 1.106 0 .624-.42 1.101-.807 1.526L4.99 10.553v.744h4.78v-.99H6.643v-.069L8.41 8.252c.65-.724 1.237-1.332 1.237-2.27C9.646 4.849 8.723 4 7.308 4c-1.573 0-2.36 1.064-2.36 2.15v.057h1.138Zm6.559 1.883h.786c.823 0 1.374.481 1.379 1.179.01.707-.55 1.216-1.421 1.21-.77-.005-1.326-.419-1.379-.953h-1.095c.042 1.053.938 1.918 2.464 1.918 1.478 0 2.642-.839 2.62-2.144-.02-1.143-.922-1.651-1.551-1.714v-.063c.535-.09 1.347-.66 1.326-1.678-.026-1.053-.933-1.855-2.359-1.845-1.5.005-2.317.88-2.348 1.898h1.116c.032-.498.498-.944 1.206-.944.703 0 1.206.435 1.206 1.07.005.64-.504 1.106-1.2 1.106h-.75v.96Z" />
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                               </svg>
-                              {"  "}
-                              <br />
-                              Searching by Art / Nupn
-                              <br />
-                            </h4>
-                            <div className="input-icon">
-                              <span className="icon">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  className="bi bi-search"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-                                </svg>
-                              </span>
-                              <FormControl
-                                className="form-control-lg"
-                                placeholder="type here...."
-                                style={{ backgroundColor: "#F4F4F4" }}
-                                onChange={(e) => {
-                                  setId(e.target.value);
-                                }}
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <></>
-                        )}
-                        {searchByPhone ? (
-                          <>
-                            {" "}
-                            <h4 className="text-center">
+                            </span>
+                            <FormControl
+                              className="form-control-lg"
+                              placeholder="type here...."
+                              style={{ backgroundColor: "#F4F4F4" }}
+                              onChange={(e) => {
+                                setId(e.target.value);
+                              }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <></>
+                      )}
+                      {searchByPhone ? (
+                        <>
+                          {" "}
+                          <h4 className="text-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="60"
+                              height="60"
+                              fill="currentColor"
+                              className="bi bi-person-lines-fill"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z" />
+                            </svg>
+                            <br />
+                            Searching by Phone Number
+                            <br />
+                          </h4>
+                          <div className="input-icon">
+                            <span className="icon">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                width="60"
-                                height="60"
+                                width="16"
+                                height="16"
                                 fill="currentColor"
-                                className="bi bi-person-lines-fill"
+                                className="bi bi-search"
                                 viewBox="0 0 16 16"
                               >
-                                <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z" />
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                               </svg>
-                              <br />
-                              Searching by Phone Number
-                              <br />
-                            </h4>
-                            <div className="input-icon">
-                              <span className="icon">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  className="bi bi-search"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-                                </svg>
-                              </span>
-                              <FormControl
-                                className="form-control-lg"
-                                placeholder="type here...."
-                                style={{ backgroundColor: "#fff" }}
-                                onChange={(e) => {
-                                  setId(e.target.value);
-                                }}
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <></>
-                        )}
-                        {isSearchingFingerPrint ? (
-                          <>
+                            </span>
+                            <FormControl
+                              className="form-control-lg"
+                              placeholder="type here...."
+                              style={{ backgroundColor: "#F4F4F4" }}
+                              onChange={(e) => {
+                                setId(e.target.value);
+                              }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <></>
+                      )}
+                      {isSearchingFingerPrint ? (
+                        <>
+                          <center>
                             <br />
                             <strong className="text-danger">
-                              <i className="fas fa-circle-notch fa-spin"></i>
+                              <i class="fas fa-circle-notch fa-spin"></i>
                               {"  "}
                               {messageResponse}
                             </strong>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              className="float-end"
-                              style={{
-                                marginTop: "50px",
-                                borderRadius: "5px",
-                              }}
-                              variant="primary"
-                              onClick={() => {
-                                searchHandler();
-                              }}
-                            >
-                              Submit
-                            </Button>
-                          </>
-                        )}
-                      </div>
-
-                      {/* <div className="col-md-12">
+                          </center>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            className="float-end"
+                            style={{
+                              marginTop: "50px",
+                              borderRadius: "5px",
+                            }}
+                            variant="primary"
+                            onClick={() => {
+                              searchHandler();
+                            }}
+                          >
+                            Submit
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    <div className="col-md-12">
+                      <hr />
+                      <p
+                        className="text-center text-muted"
+                        style={{ marginTop: "10%" }}
+                      >
+                        All rights reserved{" "}
+                        <span className="text-primary">
+                          <strong>
+                            <img src={chip} />
+                            Bytes-Health
+                          </strong>
+                        </span>
+                      </p>
+                    </div>
+                    {/* <div className="col-md-12">
                       <FormControl type="text" placeholder="Nupn/ART" />
                       <br />
                     </div> */}
-                      {/* <div className="col-md-6">
+                    {/* <div className="col-md-6">
                       <FormControl
                         onChange={(e) => {
                           setFirstName(e.target.value);
@@ -2381,7 +1945,7 @@ const Search = () => {
                       />
                       <br />
                     </div> */}
-                      {/* <div className="col-md-6">
+                    {/* <div className="col-md-6">
                       <FormControl
                         onChange={(e) => {
                           setLastName(e.target.value);
@@ -2391,7 +1955,7 @@ const Search = () => {
                       />
                       <br />
                     </div> */}
-                      {/* <div className="col-md-12">
+                    {/* <div className="col-md-12">
                       <hr />
                       <ButtonGroup style={{ width: "100%" }}>
                         <Button
@@ -2430,9 +1994,8 @@ const Search = () => {
                       </ButtonGroup>
                     
                     </div> */}
-                    </div>
                   </div>
-                </Container>
+                </div>
               </Container>
             </Tab>
             <Tab title={<></>} eventKey="remote" disabled>
@@ -2662,7 +2225,7 @@ const Search = () => {
         dialogClassName="modal-lg"
       >
         <Modal.Header closeButton className="bg-white">
-          <h5 className="modal-title text-primary">
+          <h6 className="modal-title text-primary">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -2675,17 +2238,15 @@ const Search = () => {
               <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
             </svg>
             {"  "}Book Appointment
-          </h5>
+          </h6>
         </Modal.Header>
         <Modal.Body className="bg-light">
           <div className="row">
             <div className="col-md-6">
-              <label>Appointment type</label>
               <select
                 onChange={(e) => {
                   setAppointmentType(e.target.value);
                 }}
-                defaultValue={appointmentType}
                 className="form-control"
               >
                 <optgroup label="Appointments">
@@ -2699,38 +2260,32 @@ const Search = () => {
               </select>
             </div>
             <div className="col-md-6">
-              <label>Appointment time</label>
               <FormControl
                 min="07:00"
                 max="17:00"
                 onChange={(e) => {
                   setTimeBooked(e.target.value);
                 }}
-                defaultValue={timeBooked}
                 type="time"
               />
               <br />
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Next appointment date</label>
               <FormControl
                 onChange={(e) => {
                   setDateBooked(e.target.value);
                 }}
-                defaultValue={dateBooked}
                 type="date"
               />
               <br />
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Assign Clinician</label>
               <select
                 onChange={(e) => {
                   setClinicianAssigned(e.target.value);
                 }}
-                defaultValue={clinicianAssigned}
                 className="form-control"
               >
                 <optgroup label="Assign  Clinicians">
@@ -2747,12 +2302,10 @@ const Search = () => {
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Assign CHW</label>
               <select
                 onChange={(e) => {
                   setCommunityAssigned(e.target.value);
                 }}
-                defaultValue={communityAssigned}
                 className="form-control"
               >
                 <optgroup label="Assign  Clinicians">
@@ -2769,12 +2322,10 @@ const Search = () => {
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Update phone number</label>
               <FormControl
                 onChange={(e) => {
                   setUpdateContact(e.target.value);
                 }}
-                defaultValue={updateContact}
                 type="text"
                 placeholder="Update phone number"
               />
@@ -2782,9 +2333,7 @@ const Search = () => {
             </div>
             <div className="col-md-6"></div>
             <div className="col-md-6">
-              <label>Comment</label>
               <FormControl
-                defaultValue={comments}
                 onChange={(e) => {
                   setComments(e.target.value);
                 }}
@@ -2831,7 +2380,7 @@ const Search = () => {
                   <option value="">Select Appointments</option>
                   <option value="1">AZT+3TC+NVP</option>
                   <option value="2">Co-trimoxazole</option>
-                  {/* <option value=""></option> */}
+                  <option value="" disabled disabled></option>
                   <option value="3">Serological Test</option>
                   <option value="4">Nucleic Acid Testing</option>
                 </optgroup>
@@ -3204,7 +2753,7 @@ const Search = () => {
         }}
       >
         <Modal.Header closeButton>
-          <h5 className="text-primary">
+          <h5 className="text-muted">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -3222,44 +2771,36 @@ const Search = () => {
         <Modal.Body className="bg-light">
           <div className="row">
             <div className="col-md-12">
-              <label>Person reporting</label>
               <FormControl
                 onChange={(e) => {
                   setReportedBy(e.target.value);
                 }}
-                defaultValue={reportedBy}
                 placeholder="Reported by"
               />
               <br />
             </div>
             <div className="col-md-12">
-              <label>Cause of death</label>
               <FormControl
                 onChange={(e) => {
                   setCause(e.target.value);
                 }}
-                defaultValue={cause}
                 placeholder="Cause Of Death"
               />
               <br />
             </div>
             <div className="col-md-6">
-              <label>Date client died</label>
               <FormControl
                 onChange={(e) => {
                   setDateDeath(e.target.value);
                 }}
-                defaultValue={reportedBy}
                 type="date"
               />
             </div>
             <div className="col-md-6">
-              <label>Where death occured</label>
               <select
                 onChange={(e) => {
                   setPlaceDeath(e.target.value);
                 }}
-                deathValue={placeDeath}
                 className="form-control"
               >
                 <optgroup label="Where death occured">
@@ -3287,7 +2828,7 @@ const Search = () => {
       {/* Modal transfer */}
       <Modal
         show={transferModal}
-        dialogClassName="modal-xl"
+        dialogClassName="modal-lg"
         onHide={() => {
           setTransferModal(false);
         }}
@@ -3299,214 +2840,108 @@ const Search = () => {
               width="26"
               height="26"
               fill="currentColor"
-              className="bi bi-plus-circle text-primary"
+              className="bi bi-plus-circle"
               viewBox="0 0 16 16"
             >
               <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
               <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
             </svg>
-            {"   "}Patient Status | Referral Form<strong>{formTitle}</strong>
+            {"   "}Transfer client to another institution
           </h5>
         </Modal.Header>
         <Modal.Body className="bg-light">
-          <div className="checkbox">
-            <div className="checkboxItem">
-              <label>Transfer</label>
-              {"   "}
-              <input
-                type="checkbox"
-                onChange={(e) => {
-                  setPatientTransferStatus(e.target.checked);
-                  setPatientLTFUStatus(false);
-                  setFormTitle("Referral Form");
-                }}
-              />
-            </div>
-            <div className="checkboxItem display-none">
-              <label>Lost to Follow</label>
-              {"   "}
-              <input
-                type="checkbox"
-                onChange={(e) => {
-                  setPatientTransferStatus(false);
-                  setPatientLTFUStatus(e.target.checked);
-                  setFormTitle("Declare LFTU");
-                }}
-              />
-            </div>
-            <div className="checkboxItem display-none">
-              <label>Defaulter</label>
-              {"   "}
-              <input type="checkbox" /> {"   "}
-            </div>
-            <div className="checkboxItem">
-              <label>Mortallity</label>
-              {"   "}
-              <input type="checkbox" /> {"   "}
-            </div>
-          </div>
-
           <div className="row">
-            {/* transfer */}
-            {patientTransferStatus ? (
-              <>
-                <div className="col-md-12">
-                  <h6 className="text-center"></h6>
-
-                  <label>Clinician</label>
-                  <FormControl
-                    onChange={(e) => {
-                      setClinicianTransfer(e.target.value);
-                    }}
-                    type="text"
-                    placeholder="Clinician transfering"
-                    defaultValue={clinicianTransfer}
-                  />
-                  <br />
-                </div>
-                <div className="col-md-6">
-                  <label>Clinician Title</label>
-                  <FormControl
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                    }}
-                    type="text"
-                    placeholder="Title"
-                    defaultValue={title}
-                  />
-                  <br />
-                </div>
-                <div className="col-md-6">
-                  <label>Clinician Phone number</label>
-                  <FormControl
-                    onChange={(e) => {
-                      setClinicianPhone(e.target.value);
-                    }}
-                    type="text"
-                    placeholder="Phone number"
-                    defaultValue={clinicianPhone}
-                  />
-                  <br />
-                </div>
-                {/* Reasons for referral */}
-                <div className="col-md-12">
-                  <label>Reason for referral</label>
+            <div className="col-md-12">
+              <FormControl
+                onChange={(e) => {
+                  setClinicianTransfer(e.target.value);
+                }}
+                type="text"
+                placeholder="Clinician transfering"
+              />
+              <br />
+            </div>
+            <div className="col-md-6">
+              {" "}
+              <FormControl
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                }}
+                type="text"
+                placeholder="Title"
+              />
+              <br />
+            </div>
+            <div className="col-md-6">
+              {" "}
+              <FormControl
+                onChange={(e) => {
+                  setClinicianPhone(e.target.value);
+                }}
+                type="text"
+                placeholder="Phone number"
+              />
+              <br />
+            </div>
+            <div className="col-md-6">
+              <select
+                onChange={(e) => {
+                  setSelectProvince(e.target.value);
+                }}
+                className="form-control"
+              >
+                <optgroup label="Provinces">
+                  <option disabled>Select Province</option>
+                  {province.map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.province}
+                    </option>
+                  ))}{" "}
+                </optgroup>
+              </select>
+            </div>
+            <div className="col-md-6">
+              {selectDistrict ? (
+                <>
                   <select
+                    onChange={(e) => setSelectDistrict(e.target.value)}
                     className="form-control"
-                    onChange={(e) => {
-                      setReasonForReferral(e.target.value);
-                    }}
                   >
-                    <optgroup label="Reasons">
-                      <option value="1">Select</option>
-                      <option value="2">Routine Transfer</option>
-                      <option value="3">Complicated care</option>
-                      <option value="4">Discharge from facility</option>
-                      <option value="5">Patient request</option>
-                      <option value="6">Others</option>
+                    {district.map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {row.district}
+                      </option>
+                    ))}{" "}
+                  </select>
+                </>
+              ) : (
+                <>
+                  <select className="form-control" disabled>
+                    <optgroup>
+                      <option>Select district</option>
                     </optgroup>
                   </select>
-                </div>
-                {/* Other reason for referral */}
-                <div className="col-md-12">
-                  {reasonForRefferal === "6" ? (
-                    <>
-                      <label>Other reasons for transfer</label>
-                      <FormControl
-                        as="textarea"
-                        rows={3}
-                        placeholder="Other reasons"
-                      />
-                    </>
-                  ) : (
-                    <></>
-                  )}
-                </div>
-                {/* Select Province  */}
-                <div className="col-md-6">
-                  <label>Receiving Province</label>
-                  <select
-                    onChange={(e) => {
-                      setSelectProvince(e.target.value);
-                    }}
-                    className="form-control"
-                    defaultValue={selectProvince}
-                  >
-                    <optgroup label="Provinces">
-                      <option>Select Province</option>
-                      {province.map((row) => (
-                        <option key={row.id} value={row.id}>
-                          {row.province}
-                        </option>
-                      ))}{" "}
-                    </optgroup>
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  {/* Select District */}
-                  <label>Receiving District</label>
-                  {selectDistrict ? (
-                    <>
-                      <select
-                        onChange={(e) => setSelectDistrict(e.target.value)}
-                        className="form-control"
-                        defaultValue={selectDistrict}
-                        disabled={districtState}
-                      >
-                        <option>Select District</option>
-                        {district.map((row) => (
-                          <option key={row.id} value={row.id}>
-                            {row.district}
-                          </option>
-                        ))}{" "}
-                      </select>
-                    </>
-                  ) : (
-                    <>
-                      <select className="form-control" disabled>
-                        <optgroup>
-                          <option>Select district</option>
-                        </optgroup>
-                      </select>
-                    </>
-                  )}{" "}
-                </div>
-                {/* Select Facility */}
-                <div className="col-md-12">
-                  <label>Receiving Facility</label>
-                  <select
-                    onChange={(e) => {
-                      setFacilityTransfer(e.target.value);
-                    }}
-                    className="form-control"
-                    defaultValue={facilityTransfer}
-                    disabled={facilityState}
-                  >
-                    <optgroup label="Health Facilities">
-                      <option>Select Facility</option>
-                      {facility.map((row) => (
-                        <option key={row.id} value={row.hmis_code}>
-                          {row.facility_name}
-                        </option>
-                      ))}{" "}
-                    </optgroup>
-                  </select>
-                </div>
-                <div className="col-md-12">
-                  <label>Comment</label>
-                  <FormControl
-                    as="textarea"
-                    row={3}
-                    onChange={(e) => {
-                      setTransferComment(e.target.value);
-                    }}
-                  />
-                </div>
-                {/* Transfer ends  */}
-              </>
-            ) : (
-              <></>
-            )}
+                </>
+              )}{" "}
+            </div>
+            <div className="col-md-12">
+              <br />
+              <select
+                onChange={(e) => {
+                  setFacilityTransfer(e.target.value);
+                }}
+                className="form-control"
+              >
+                <optgroup label="Health Facilities">
+                  <option>Select Facility</option>
+                  {facility.map((row) => (
+                    <option key={row.id} value={row.hmis_code}>
+                      {row.facility_name}
+                    </option>
+                  ))}{" "}
+                </optgroup>
+              </select>
+            </div>
           </div>
         </Modal.Body>
         <Modal.Footer>
@@ -3520,6 +2955,7 @@ const Search = () => {
         </Modal.Footer>
       </Modal>
       {/* add client */}
+
       <Modal
         show={newClientModal}
         dialogClassName="modal-lg"
@@ -3534,7 +2970,7 @@ const Search = () => {
               width="24"
               height="28"
               fill="currentColor"
-              className="bi bi-person-plus text-primary"
+              className="bi bi-person-plus"
               viewBox="0 0 16 16"
             >
               <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
@@ -3547,64 +2983,55 @@ const Search = () => {
         <Modal.Body className="bg-light">
           <div className="row">
             <div className="col-md-6">
-              <label>ART Number</label>
               <FormControl
                 placeholder="Art Number"
                 onChange={(e) => {
                   setNewArtNumber(e.target.value);
                 }}
-                defaultValue={newArtNumber}
               />
+              <br />
             </div>
             <div className="col-md-6">
-              <label>Nupn Number</label>
               <FormControl
                 onChange={(e) => {
                   setNewNupn(e.target.value);
                 }}
                 placeholder="National Patient Identification Number"
-                defaultValue={newNupn}
               />
+              <br />
             </div>
             <div className="col-md-6">
-              <label>First Name</label>
               <FormControl
                 onChange={(e) => {
                   setNewFname(e.target.value);
                 }}
                 placeholder="First Name"
-                defaultValue={newFname}
               />
+              <br />
             </div>
             <div className="col-md-6">
-              <label>Last Name</label>
               <FormControl
                 onChange={(e) => {
                   setNewLname(e.target.value);
                 }}
                 placeholder="Last Name"
-                defaultValue={newLname}
               />
               <br />
             </div>
             <div className="col-md-8">
-              <label>Date of Birth</label>
               <FormControl
                 onChange={(e) => {
                   setNewDob(e.target.value);
                 }}
-                defaultValue={newDob}
                 type="date"
               />
             </div>
             <div className="col-md-4">
-              <label>Gender</label>
               <select
                 onChange={(e) => {
                   setNewGender(e.target.value);
                 }}
                 className="form-control"
-                defaultValue={newGender}
               >
                 <optgroup label="Gender">
                   <option>Select gender</option>
@@ -3614,39 +3041,34 @@ const Search = () => {
               </select>
             </div>
             <div className="col-md-7">
-              <label>National Registrationo Card</label>
+              <br />
               <FormControl
                 onChange={(e) => {
                   setNewNrc(e.target.value);
                 }}
                 placeholder="Nrc format e.g xxxxxx/xx/1"
-                defaultValue={newNrc}
               />
             </div>
             <div className="col-md-5">
-              <label>Phone Number</label>
+              <br />
               <FormControl
                 onChange={(e) => {
                   setNewPhone(e.target.value);
                 }}
                 placeholder="Phone number"
-                defaultValue={newPhone}
               />
             </div>
             <div className="col-md-12">
-              <label>Email Address</label>
+              <br />
               <FormControl
                 onChange={(e) => {
                   setNewEmail(e.target.value);
                 }}
                 placeholder="Email address"
-                defaultValue={newEmail}
               />
             </div>
             <div className="col-md-12">
-              <label>
-                Physical Address<span className="text-danger float-end">*</span>
-              </label>
+              <br />
               <FormControl
                 onChange={(e) => {
                   setNewAddress(e.target.value);
@@ -3654,7 +3076,6 @@ const Search = () => {
                 as="textarea"
                 row={6}
                 placeholder="Address"
-                defaultValue={newAddress}
               />
             </div>
             <br />
@@ -3683,6 +3104,7 @@ const Search = () => {
             {capturedBiometricData === "" ? (
               <>
                 {" "}
+                <br />
                 {/* <img src={loading} width={250} />
             <h5 className="text-primary">Verifying finger prints...</h5> */}
                 <svg
@@ -3690,7 +3112,7 @@ const Search = () => {
                   width="200"
                   height="200"
                   fill="currentColor"
-                  className="text-muted bi bi-fingerprint"
+                  class="text-muted bi bi-fingerprint"
                   viewBox="0 0 16 16"
                 >
                   <path d="M8.06 6.5a.5.5 0 0 1 .5.5v.776a11.5 11.5 0 0 1-.552 3.519l-1.331 4.14a.5.5 0 0 1-.952-.305l1.33-4.141a10.5 10.5 0 0 0 .504-3.213V7a.5.5 0 0 1 .5-.5Z" />
@@ -3736,209 +3158,6 @@ const Search = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-      {/* Modal biometric */}
-      <Modal
-        show={bioScan}
-        dialogClassName="modal-lg"
-        onHide={() => {
-          setBioScan(false);
-        }}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {/* <i className="fas fa-fingerprint text-primary"></i> */}
-            {"  "}Scan Biometric
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body style={{ height: 280 }} className="bg-light">
-          <div className="row">
-            {/* <div className="col-md-12">
-              {" "}
-              <h6
-                className="text-center text-primary"
-                style={{ fontFamily: "sans-serif" }}
-              >
-                <i className="fas fa-circle-notch fa-spin fa-5x"></i> <br />
-              </h6>
-            </div> */}
-            <center>
-              <h6>Scan atleast two (2) fingers</h6>
-              <div className="" style={{ width: 380, margin: "auto" }}>
-                <div
-                  className="scanned"
-                  style={{ display: "flex", flexiDirection: "row" }}
-                >
-                  <div
-                    className="bg-white"
-                    style={{
-                      position: "relative",
-                      padding: 10,
-                      borderRadius: 5,
-                    }}
-                    onClick={() => {
-                      openFingerprintReader();
-                      setFirstFinger(true);
-                      setSecondFinger(false);
-                      setThirdFinger(false);
-                    }}
-                  >
-                    {markFirstFinger ? (
-                      <>
-                        <i
-                          className="fas fa-check-circle "
-                          style={{ position: "absolute", top: 5, right: 5 }}
-                        ></i>
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                    <i className="fas fa-fingerprint text-secondary fa-3x"></i>
-                  </div>
-                  <div
-                    className="bg-white"
-                    style={{
-                      position: "relative",
-                      padding: 10,
-                      borderRadius: 5,
-                    }}
-                    onClick={() => {
-                      openFingerprintReader();
-                      setSecondFinger(true);
-                      setFirstFinger(false);
-                      setThirdFinger(false);
-                    }}
-                  >
-                    {markSecondFinger ? (
-                      <>
-                        <i
-                          className="fas fa-check-circle "
-                          style={{ position: "absolute", top: 5, right: 5 }}
-                        ></i>
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                    <i className="fas fa-fingerprint text-secondary fa-3x"></i>
-                  </div>
-                  <div
-                    className="bg-white"
-                    style={{
-                      position: "relative",
-                      padding: 10,
-                      borderRadius: 5,
-                    }}
-                    onClick={() => {
-                      openFingerprintReader();
-                      setThirdFinger(true);
-                      setSecondFinger(false);
-                      setFirstFinger(false);
-                    }}
-                  >
-                    {" "}
-                    {markThirdFinger ? (
-                      <>
-                        {" "}
-                        <i
-                          classNameh="fas fa-check-circle "
-                          style={{ position: "absolute", top: 5, right: 5 }}
-                        ></i>
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                    <i className="fas fa-fingerprint text-secondary fa-3x"></i>
-                  </div>
-                </div>
-              </div>
-            </center>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() => {
-              IdentifyFingerPrint();
-            }}
-          >
-            Submit
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      {/* <Modal show={true} dialogClassName="modal-lg">
-        <Modal.Header>
-          <h5 className="text-primary">
-            {"  "}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              fill="currentColor"
-              class="bi bi-pin-map-fill text-muted"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M3.1 11.2a.5.5 0 0 1 .4-.2H6a.5.5 0 0 1 0 1H3.75L1.5 15h13l-2.25-3H10a.5.5 0 0 1 0-1h2.5a.5.5 0 0 1 .4.2l3 4a.5.5 0 0 1-.4.8H.5a.5.5 0 0 1-.4-.8l3-4z"
-              />
-              <path
-                fill-rule="evenodd"
-                d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999z"
-              />
-            </svg>{" "}
-            {"   "}
-            Clients Map Direction
-          </h5>
-        </Modal.Header>
-        <Modal.Body style={{ height: 760, width: 660, padding: 0 }}>
-          <Map />
-          {/* <LoadScript googleMapsApiKey="AIzaSyBtA6Bp6uh23blw06svnnkO_5rP13ucb7A">
-            <GoogleMap
-              mapContainerStyle={{
-                width: 760,
-                height: 600,
-              }}
-              center={facilityPosition}
-              zoom={18}
-            >
-              {response !== null && (
-                <DirectionsRenderer
-                  options={{
-                    directions: response,
-                  }}
-                />
-              )}
-              <DirectionsService
-                options={{
-                  destination: {
-                    lat: -13.65517,
-                    lng: 32.64161,
-                  },
-                  origin: {
-                    facilityPosition,
-                  },
-                }}
-                callback={directionsCallback}
-              />
-
-              <Marker
-                Marker
-                onLoad={onLoad}
-                position={facilityPosition}
-                label={sessionStorage.getItem("hmis")}
-              />
-
-              <Marker
-                onLoad={onLoad}
-                position={{ lat: -13.65517, lng: 32.64161 }}
-                label={response}
-              />
-              {/* Child components, such as markers, info windows, etc. */}
-      {/* <></>
-            </GoogleMap>
-          </LoadScript> */}
-      {/* </Modal.Body>
-      </Modal> */}{" "}
-      <NotificationContainer />
     </>
   );
 };

@@ -10,8 +10,8 @@ import { Router, Switch, Route } from "react-router-dom";
 import history from "./history";
 import Workers from "./components/workers/workers";
 import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
+
 function App() {
-  console.log(process.env); //printing it to console
   return (
     <>
       <Router history={history}>
