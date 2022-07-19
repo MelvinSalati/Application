@@ -271,16 +271,15 @@ const MissedAppointments = () => {
             </Button>
           </ButtonGroup>
         </h5>
-        <Container style={{ height: "550px" }}>
-          <FilterableTable
-            data={appointmentsList}
-            fields={tableFields}
-            pageSize={8}
-            pageSizes={false}
-            topPagerVisible={false}
-            sortable={true}
-          />
-        </Container>
+        {/* <Container className="bg-white"> */}
+        <FilterableTable
+          data={appointmentsList}
+          fields={tableFields}
+          pageSize={8}
+          pageSizes={false}
+          topPagerVisible={false}
+          sortable={true}
+        />
         <Modal
           show={viewTrackingHistoryModal}
           onHide={() => {

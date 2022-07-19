@@ -1541,13 +1541,13 @@ const Search = () => {
           >
             <Tab title={<>Search Facility</>} eventKey="facility">
               <h5 className="component">
-                <i className="fas fa-users-cog fa-fw"></i> Search all clients
-                accessing treatment
                 <Button
-                  className="float-end btn-sm"
+                  style={{ marginBottom: 50 }}
+                  className="float-end "
                   onClick={() => {
                     setNewClientModal(true);
                   }}
+                  variant="success"
                 >
                   Add Recipient
                 </Button>
@@ -1916,7 +1916,7 @@ const Search = () => {
                         </>
                       )}
                     </div>
-                    <div className="col-md-12">
+                    {/* <div className="col-md-12">
                       <hr />
                       <p
                         className="text-center text-muted"
@@ -1930,7 +1930,7 @@ const Search = () => {
                           </strong>
                         </span>
                       </p>
-                    </div>
+                    </div> */}
                     {/* <div className="col-md-12">
                       <FormControl type="text" placeholder="Nupn/ART" />
                       <br />

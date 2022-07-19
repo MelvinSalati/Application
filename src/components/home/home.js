@@ -539,13 +539,16 @@ const Home = () => {
         <></>
       )}
       <div
-        // style={{ height: "720px" }}
+        style={{ height: "inherit" }}
         className="container bg-white border"
         id="content"
       >
         {component()}
       </div>
-      <p className="text-center">
+      <p
+        className="text-center"
+        style={{ position: "absolute", bottom: 0, left: "40%" }}
+      >
         <strong>
           <image src={Icon} width={30} />
           Maintained by Minstry Of Health <br />
