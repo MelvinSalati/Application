@@ -9,7 +9,6 @@ import Swal from "sweetalert2";
 const PatientLevel = () => {
   const [email, setEmail] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
-  const [emailReportTo, setEmailReportTo] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
   const [reportID, setReportID] = React.useState("");
   const [reportModal, setReportModal] = React.useState("");
@@ -17,12 +16,7 @@ const PatientLevel = () => {
   const todays = new Date();
   const today = todays.getDate();
   const getReport = () => {
-    if (startDate === "" || endDate == "") {
-      Swal.fire({
-        icon: "warning",
-        title: "Error",
-        text: "Please pick date",
-      });
+    if (startDate === "" || endDate === "") {
     } else {
       const start = new Date(startDate);
       const end = new Date(endDate);
@@ -30,12 +24,14 @@ const PatientLevel = () => {
       const endD = end.getTime();
 
       if (startD < endD) {
+        setReportModal(false);
         window.open(
-          `https://reports.v2.smart-umodzi.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
+          `http://127.0.0.1/reports.v2/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
         );
       } else if (startD === endD) {
+        setReportModal(false);
         window.open(
-          `https://reports.v2.smart-umodzi.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
+          `http://127.0.0.1/reports.v2/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
         );
       } else if (endD > today) {
         Swal.fire({
@@ -124,6 +120,18 @@ const PatientLevel = () => {
       title: "Late Appointment List > 28 days",
       cat: "Appointments / Events",
     },
+    {
+      SN: "4",
+      desc: "List of clients who where transfered out, reaching the facility",
+      title: "Transfer out",
+      cat: "Events",
+    },
+    // {
+    //   SN: "4",
+    //   desc: "List of clients who where transfered out, but have not reached the facility",
+    //   title: "Transfer out",
+    //   cat: "Events",
+    // },
   ];
   return (
     <>

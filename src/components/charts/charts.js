@@ -24,7 +24,9 @@ const Charts = () => {
         {"  "}
         Performance Indicators
       </h4>
-      <Tabs
+
+      <BarCharts />
+      {/* <Tabs
         onSelect={(k) => {
           setKey(k);
         }}
@@ -34,12 +36,11 @@ const Charts = () => {
           eventKey="appointments"
           title={<span>Weekly Appointment Indicators</span>}
         >
-          <BarCharts />
         </Tab>
         <Tab eventKey="events" title={<>Weekly Events Indicators</>}>
           <EventsChart />
         </Tab>
-      </Tabs>
+      </Tabs> */}
     </>
   );
 };

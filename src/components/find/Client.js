@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 
-const FindClient = () => {
+const FindClient = (props) => {
   return (
     <>
-      <h4>Find Clinet</h4>
+      <h4>Find Clinet {props.id}</h4>
     </>
   );
 };

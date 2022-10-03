@@ -5,7 +5,6 @@ import Nav from "react-bootstrap/Nav";
 import Container from "react-bootstrap/esm/Container";
 import Icon from "../icon.jpeg";
 import Avatar from "react-avatar";
-//components
 import Charts from "../charts/charts";
 import Search from "../search/search";
 import Notices from "../notices/notices";
@@ -14,49 +13,30 @@ import Scheduled from "../appointments/scheduled";
 import Events from "../events/events";
 import Tracking from "../tracking/tracking";
 import Reports from "../reports/reports";
-import Button from "react-bootstrap/esm/Button";
 import axios from "../../requestHandler";
 import Workers from "../workers/workers";
 
 const Home = () => {
-  const hmis = sessionStorage.getItem("hmis");
-  const [uuid, setUuid] = React.useState(false);
+  const [componentName, setComponentName] = React.useState("charts");
   const [notifications, setNotifications] = React.useState([]);
   const [notificationData, setNotificationData] = React.useState(false);
-  //read notification
+
   useEffect(() => {
+    const hmis = sessionStorage.getItem("hmis");
     async function getNotifications() {
-      const request = await axios.get(
-        `api/v1/facility/notifications/new/${hmis}`
-      );
+      const request = await axios.get(`api/v1/notifications/show/${hmis}`);
       setNotifications(request.data.notifications);
+      if (request.data.notifications.length > 0) {
+        setNotificationData(true);
+        setNotifications(request.data.notifications);
+        console.log(request.data.notifications);
+      } else {
+        setNotificationData(false);
+      }
     }
 
     getNotifications();
-  }, []);
-
-  const readNotification = async (id) => {
-    const request = await axios
-      .get(`/api/v1/facility/notifications/read/${uuid}`)
-      .then((response) => {
-        console.log(response.data);
-      })
-      .catch((error) => {
-        alert(error.data);
-      });
-    // removeItem();
-  };
-  const removeItem = () => {
-    var ind = notifications.findIndex(function (element) {
-      return element.uuid === uuid;
-    });
-
-    console.log(uuid);
-    if (ind !== -1) {
-      const data = notifications.splice(ind, 1);
-      console.log(data);
-    }
-  };
+  }, [componentName]);
 
   //menu
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -68,8 +48,6 @@ const Home = () => {
       setIsMenuOpen(true);
     }
   };
-  //component selection
-  const [componentName, setComponentName] = React.useState("charts");
 
   const component = () => {
     if (componentName === "charts") {
@@ -92,35 +70,42 @@ const Home = () => {
   };
 
   return (
-    <div
-    //   onClick={() => {
-    //     setIsMenuOpen(false);
-    //   }}
-    >
-      <Navbar bg="white" expand="lg" className="border-bottom">
+    <div>
+      <Navbar
+        bg="white"
+        expand="lg"
+        className="border-bottom "
+        style={{ padding: 0 }}
+      >
         <Container>
           <Navbar.Brand
             className="text-secondary"
             onClick={() => {
               menu();
             }}
-            style={{ fontFamily: "Roboto", fontWeight: 800 }}
+            style={{ fontFamily: "Roboto", fontWeight: "bold" }}
           >
-            <img src={Icon} alt="" width={30} height={30} />
+            <img src={Icon} alt="" width={40} height={50} />
             {"  "}{" "}
-            <strong className="text-primary">
+            <strong className="text-primar">
               {sessionStorage.getItem("name")}
             </strong>
           </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ms-auto">
+          {/* <Navbar.Toggle aria-controls="basic-navbar-nav bg-danger" /> */}
+          <Navbar.Collapse id="basic-navbar-nav ">
+            <Nav className="ms-auto " style={{ padding: 0 }}>
               <NavDropdown
-                className="border-0"
+                className="border-5"
+                style={{
+                  borderBottom: "5px solid #3A67D7",
+                  paddingBottom: "15px",
+                  paddingTop: "15px",
+                  backgroundColor: "#ebf0fb",
+                }}
                 title={
                   <>
                     {" "}
-                    {notifications ? (
+                    {notificationData ? (
                       <>
                         <span className="blink_me">
                           {" "}
@@ -146,20 +131,29 @@ const Home = () => {
                 }
                 id="basic-nav-dropdown"
               >
-                <h5 className="text-primary text-center border-botto component">
-                  <i className="fas fa-envelope-open-text fa-fw"></i> {"   "}
-                  Remote Notifications{" "}
+                <h5
+                  style={{
+                    color: "#333",
+                    paddingLeft: "20px",
+                  }}
+                  className="text-center"
+                >
+                  Remote Notifications
                 </h5>
                 <div
                   className="notifications list-group"
                   style={{ width: "310px", display: "flex" }}
                 >
-                  {notifications ? (
+                  {notifications.length > 0 ? (
                     <>
                       {notifications.map((row) => (
                         <div
                           className="notification-container border-bottom"
-                          style={{ width: "310px", display: "flex" }}
+                          style={{
+                            padding: 5,
+                            width: "310px",
+                            display: "flex",
+                          }}
                         >
                           <Avatar
                             name={row.client_name}
@@ -167,54 +161,12 @@ const Home = () => {
                             round={true}
                           />
                           <div className="notification-text ">
-                            <p>
-                              <strong className="text-muted">
+                            <p className="text-muted">
+                              <strong className="text-mute">
                                 {row.client_name}
-                              </strong>{" "}
+                              </strong>
                               <br />
-                              <span>{row.text}</span>
-                              <br />
-                              <span className="subbuttons" style={{}}>
-                                <span
-                                  className="border-left"
-                                  onClick={() => {
-                                    // setNotificationID(row.id);
-                                    readNotification(row.id);
-                                  }}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    fill="currentColor"
-                                    className="text-primary bi bi-check2-all"
-                                    viewBox="0 0 16 16"
-                                  >
-                                    <path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z" />
-                                    <path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z" />
-                                  </svg>
-                                  <small className="border-right">
-                                    {" "}
-                                    Mark as seen
-                                  </small>
-                                </span>
-                                <span className="border-left buttons">
-                                  {/* <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    fill="currentColor"
-                                    className="bi bi-person"
-                                    viewBox="0 0 16 16"
-                                  >
-                                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
-                                  </svg> */}
-                                  <small className="border-right">
-                                    {" "}
-                                    ID # : {row.art_number}
-                                  </small>
-                                </span>
-                              </span>
+                              <span style={{ color: "#AAA" }}>{row.text}</span>
                             </p>
                           </div>
                           <br />
@@ -223,7 +175,9 @@ const Home = () => {
                     </>
                   ) : (
                     <>
-                      <div style={{ margin: "auto" }}></div>
+                      <div style={{ margin: "auto" }}>
+                        <h5 style={{ color: "#AAA" }}>No new notifications</h5>
+                      </div>
                     </>
                   )}
                 </div>
@@ -239,6 +193,12 @@ const Home = () => {
                 </svg>
               </NavDropdown>
               <NavDropdown
+                style={{
+                  // borderBottom: "5px solid #3A67D7",
+                  paddingBottom: "15px",
+                  paddingTop: "15px",
+                  // backgroundColor: "#ebf0fb",
+                }}
                 title={
                   <span>
                     <Avatar
@@ -538,24 +498,9 @@ const Home = () => {
       ) : (
         <></>
       )}
-      <div
-        style={{ height: "inherit" }}
-        className="container bg-white border"
-        id="content"
-      >
+      <div className="bg-white container" id="content">
         {component()}
       </div>
-      <p
-        className="text-center"
-        style={{ position: "absolute", bottom: 0, left: "40%" }}
-      >
-        <strong>
-          <image src={Icon} width={30} />
-          Maintained by Minstry Of Health <br />
-          Eastern Province Health Office with{" "}
-          <span className="text-primary">CDC support</span>
-        </strong>
-      </p>
     </div>
   );
 };

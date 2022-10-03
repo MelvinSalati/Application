@@ -1,6 +1,7 @@
 body {
-  background: rgba(238, 238, 238, 0.377);
-  font-family: "roboto";
+  background: #d4d8e2;
+  /* #f9fbfe; */
+  font-family: sans-serif "roboto";
   /* #f8f8f8; */
 }
 label {
@@ -9,21 +10,24 @@ label {
   color: #007bbf;
 }
 .bg-charts {
-  background: #f5f5f54b;
+  background: #aaa;
+  border-top: 1px solid #ddd;
 }
 .fa-spin {
   -webkit-animation: fa-spin 600ms infinite linear;
   animation: fa-spin 600ms infinite linear;
 }
 #content {
-  margin: 2% auto;
+  margin: 4% auto;
+  justify-content: center;
+  align-items: center;
   /* display: flex;
   margin: 2% auto;
   justify-content: center;
   align-items: center;
   /* text-align: center; */
   /* min-height: 100vh;  */
-  /* height: max-content !important; */
+  height: inherit !important;
 }
 .tab-menu-btns {
   display: flex;
@@ -219,6 +223,10 @@ center > h5 {
   /* width: 30px;
   height: 30px; */
   /* padding: 10px; */
+}
+.notification-container {
+  border-top: 1px solid #eee;
+  padding: 0;
 }
 .menu-items {
   display: flex;

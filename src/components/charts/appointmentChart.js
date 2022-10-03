@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 // import { Bar } from "react-chartjs-2";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import axios from "../../requestHandler";
 import { Audio } from "react-loader-spinner";
 import {
@@ -11,9 +11,88 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  // ComposedChart,
+  // Line,
+  // Area,
+  // ResponsiveContainer,
+  // PieChart,
+  // Pie,
+  // Sector,
 } from "recharts";
 
 const BarCharts = () => {
+  // const renderActiveShape = (props: any) => {
+  //   const RADIAN = Math.PI / 180;
+  //   const {
+  //     cx,
+  //     cy,
+  //     midAngle,
+  //     innerRadius,
+  //     outerRadius,
+  //     startAngle,
+  //     endAngle,
+  //     fill,
+  //     payload,
+  //     percent,
+  //     value,
+  //   } = props;
+  //   const sin = Math.sin(-RADIAN * midAngle);
+  //   const cos = Math.cos(-RADIAN * midAngle);
+  //   const sx = cx + (outerRadius + 10) * cos;
+  //   const sy = cy + (outerRadius + 10) * sin;
+  //   const mx = cx + (outerRadius + 30) * cos;
+  //   const my = cy + (outerRadius + 30) * sin;
+  //   const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+  //   const ey = my;
+  //   const textAnchor = cos >= 0 ? "start" : "end";
+
+  //   return (
+  //     <g>
+  //       <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>
+  //         {payload.name}
+  //       </text>
+  //       <Sector
+  //         cx={cx}
+  //         cy={cy}
+  //         innerRadius={innerRadius}
+  //         outerRadius={outerRadius}
+  //         startAngle={startAngle}
+  //         endAngle={endAngle}
+  //         fill={fill}
+  //       />
+  //       <Sector
+  //         cx={cx}
+  //         cy={cy}
+  //         startAngle={startAngle}
+  //         endAngle={endAngle}
+  //         innerRadius={outerRadius + 6}
+  //         outerRadius={outerRadius + 10}
+  //         fill={fill}
+  //       />
+  //       <path
+  //         d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+  //         stroke={fill}
+  //         fill="none"
+  //       />
+  //       <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+  //       <text
+  //         x={ex + (cos >= 0 ? 1 : -1) * 12}
+  //         y={ey}
+  //         textAnchor={textAnchor}
+  //         fill="#333"
+  //       >{`PV ${value}`}</text>
+  //       <text
+  //         x={ex + (cos >= 0 ? 1 : -1) * 12}
+  //         y={ey}
+  //         dy={18}
+  //         textAnchor={textAnchor}
+  //         fill="#999"
+  //       >
+  //         {`(Rate ${(percent * 100).toFixed(2)}%)`}
+  //       </text>
+  //     </g>
+  //   );
+  // };
   //appointments
   const [scheduled, setScheduled] = React.useState(
     sessionStorage.getItem("scheduled")
@@ -70,7 +149,7 @@ const BarCharts = () => {
       // updateData();
     };
   }, [hmis, selectDataRange]);
-  const data = [
+  const datas = [
     {
       name: " Scheduled",
       Number: scheduled,
@@ -97,37 +176,45 @@ const BarCharts = () => {
     },
   ];
 
+  const [activeIndex, setActiveIndex] = useState(0);
+  const onPieEnter = useCallback(
+    (_, index) => {
+      setActiveIndex(index);
+    },
+    [setActiveIndex]
+  );
+
   return (
     <>
-      <center>
-        <div className="row bg-charts">
-          <div className="col-md-6"></div>
-          <div className="col-md-3"></div>
-          <div className="col-md-3">
-            <select
-              onChange={(e) => {
-                setSelectDataRange(e.target.value);
-              }}
-              className="form-control"
-              style={{ margin: "5px" }}
-            >
-              <optgroup label="Period">
-                <option value="1">Daily</option>
-                <option value="2">Weekly</option>
-              </optgroup>
-            </select>{" "}
-          </div>
+      <div className="row bg-charts">
+        <div className="col-md-6"></div>
+        <div className="col-md-3"></div>
+        <div className="col-md-3">
+          <select
+            onChange={(e) => {
+              setSelectDataRange(e.target.value);
+            }}
+            className="form-control"
+            style={{ margin: "5px" }}
+          >
+            <optgroup label="Period">
+              <option value="1">Daily</option>
+              <option value="2">Weekly</option>
+            </optgroup>
+          </select>{" "}
         </div>
-        {/* <Bar
+      </div>
+      {/* <Bar
           data={barData}
           options={barOptions}
           redraw={false}
           className=
           "bar"
         /> */}
-        {isLoading ? (
-          <>
-            {" "}
+      {isLoading ? (
+        <>
+          {" "}
+          <center>
             <span
               style={{
                 width: "150px",
@@ -149,31 +236,20 @@ const BarCharts = () => {
               <strong>Loading..</strong>
               <br />
             </span>
-          </>
-        ) : (
-          <></>
-        )}
-        <BarChart
-          width={1114}
-          height={680}
-          data={data}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="Number" fill="#569AFE" />
-          {/* <Bar dataKey="Number" fill="#82ca9d" /> */}
-        </BarChart>
-        <h5>Retention Indicators</h5>
-      </center>
+          </center>
+        </>
+      ) : (
+        <></>
+      )}
+      <BarChart width={1284} height={650} data={datas} style={{}}>
+        <CartesianGrid strokeDasharray="1 1" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        <Bar dataKey="Number" fill="cornflowerblue" barSize={100} />
+        {/* <Bar dataKey="Number" fill="#82ca9d" /> */}
+      </BarChart>
     </>
   );
 };

@@ -2,8 +2,12 @@ import React, { useEffect } from "react";
 import Container from "react-bootstrap/esm/Container";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
+import Client from "../find/Client";
 import processBiometric from "../../processBiometric";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import BiometricDevice from "../../device";
+import sync from "./health-data-sync.png";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import FormControl from "react-bootstrap/FormControl";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -13,8 +17,7 @@ import FilterableTable from "react-filterable-table";
 import Modal from "react-bootstrap/Modal";
 import Avatar from "react-avatar";
 import BiometricData from "./biometricData";
-import CLOUDABISSCANR_BASE_API_URL from "../../device";
-// import { GoogleMap, LoadScript } from "@react-google-maps/api";
+import Alert from "react-bootstrap/Alert";
 import Swal from "sweetalert2";
 import useClinicians from "../functions/useClincians";
 import useCommunity from "../functions/useCommunity";
@@ -25,22 +28,8 @@ import useProvince from "../functions/useProvince";
 import useFacility from "../functions/useFacility";
 import useDistrict from "../functions/useDistrict";
 import loading from "./process.gif";
-import Status from "../functions/clientStatus";
-import chip from "./chip.svg";
-const containerStyle = {
-  width: "100%",
-  height: "5909",
-};
-const css = {
-  fileRule: "evenodd",
-};
-const center = {
-  lat: -13.65517,
-  lng: -32.64164,
-};
+
 const Search = () => {
-  // maps
-  // clinicians
   const [clinicians, setClinicians] = useClinicians();
   const [community, setCommunity] = useCommunity();
   // tabs
@@ -49,19 +38,27 @@ const Search = () => {
   const [id, setId] = React.useState("empty");
   const [firstName, setFirstName] = React.useState("empty");
   const [lastName, setLastName] = React.useState("empty");
-
+  const [clientRegistrationFacility, setClientRegistrationFacility] =
+    React.useState("");
+  const [showVerificationForm, setShowVerificationForm] = React.useState(false);
   // search button
   const [searchBynames, setSearchByNames] = React.useState(true);
   const [searchBarcode, setSearchBarcode] = React.useState(false);
   const [searchByPhone, setSearchByPhone] = React.useState(false);
   const [searchById, setSearchById] = React.useState(false);
+  const [searchType, setSearchType] = React.useState(1);
+  const [isTransfered, setIsTransfered] = React.useState(false);
   const searchHandler = async () => {
     if (id === "empty") {
       return false;
     }
     setProcessMsg(false);
     const request = await axios
-      .get(`/api/v1/user/search/${id}/${firstName}/${lastName}`)
+      .post("/api/v1/search", {
+        type: searchType,
+        param: id,
+        hmis: sessionStorage.getItem("hmis"),
+      })
       .catch(function (error) {
         if (error.request.status === 0) {
           Swal.fire({
@@ -73,15 +70,15 @@ const Search = () => {
           setIsSearchingFingerPrint(false);
         }
       });
-    if (request.data.status === 401) {
-      Swal.fire({
-        title: "Response",
-        icon: "success",
-        text: request.data.message,
-        confirmButtonColor: "#007bbf",
-        confirmButtonText: "Exit",
-        showConfirmButton: false,
-      });
+
+    if (request.data.results[0].status === 404) {
+      const message = request.data.results[0].message;
+      toast.warn(message);
+    } else if (request.data.status === 401) {
+      toast.warn(request.data.message);
+    } else if (request.data.results[0].status === 201) {
+      //  search by temporal number
+      setShowVerificationForm(true);
     } else {
       // success
       setResults(request.data.results);
@@ -89,11 +86,35 @@ const Search = () => {
       capturedBiometricData(false);
     }
   };
+  const [token, setTokenID] = React.useState("");
+  const optSearchHandler = async () => {
+    if (token.length === 6) {
+      await axios
+        .post("/api/v1/search/otp", {
+          otp: token,
+          phone: id,
+          type: 5,
+          hmis: sessionStorage.getItem("hmis"),
+        })
+        .then((response) => {
+          if (response.data.results[0].status === 404) {
+            toast.warn(response.data.results[0].message);
+            setShowVerificationForm(false);
+          } else {
+            setShowVerificationForm(false);
 
-  // barocde search
-  // biometric
+            setResults(response.data.results);
+          }
+        })
+        .catch((error) => {
+          toast.error(error.message);
+        });
+    } else {
+      toast.warn("Invalid token length");
+    }
+  };
 
-  // const [templateData, setTemplateData] = React.useState("op");
+  const [remoteFile, setRemoteFile] = React.useState(false);
   const [capturedBiometricData, setCapturedBiometricData] =
     React.useState("false");
   const [messageResponse, setMessageResponse] = React.useState(false);
@@ -119,6 +140,25 @@ const Search = () => {
     if (CapturedBiometrics.CloudScanrStatus.Success === false) {
       return false;
     }
+  };
+  const acceptTransfer = async () => {
+    await axios
+      .patch("/api/v1/client/transfer/accept/", {
+        uuid: clientUuid,
+        hmis: hmis,
+      })
+      .then((response) => {
+        if (response.data.transfer.status === 202) {
+          toast.warn(response.data.message);
+          setIsTransfered(false);
+        } else if (response.data.transfer.status === 200) {
+          toast.success(response.data.transfer.message);
+          setIsTransfered(false);
+        }
+      })
+      .catch((error) => {
+        toast.warn(error.message);
+      });
   };
   useEffect(() => {
     if (capturedBiometricData === "false") {
@@ -185,9 +225,8 @@ const Search = () => {
   };
 
   const [results, setResults] = React.useState(false);
-
-  // table buttons
   const resultsTableBtn = (props) => {
+    setClientRegistrationFacility(props.record.registration_facility);
     return (
       <>
         <ButtonGroup className="btn-sm">
@@ -218,40 +257,85 @@ const Search = () => {
             {"  "}
             Update
           </Button>
-          <Button
-            onClick={() => {
-              setSelectedClient(true);
-              setClientUuid(props.record.client_uuid);
-              setArt(props.record.art_number);
-              setNupn(props.record.patient_nupn);
-              setClientFirstName(props.record.first_name);
-              setClientLastName(props.record.surname);
-              setClientAge(props.record.age);
-              setClientPhone(props.record.mobile_phone_number);
-              setClientDob(props.record.date_of_birth);
-              setClientSex(props.record.sex);
-            }}
-            variant="primary"
-            className="btn-sm"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              fill="currentColor"
-              className="text-white bi bi-folder-plus"
-              viewBox="0 0 16 16"
-            >
-              <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z" />
-              <path d="M13.5 10a.5.5 0 0 1 .5.5V12h1.5a.5.5 0 1 1 0 1H14v1.5a.5.5 0 1 1-1 0V13h-1.5a.5.5 0 0 1 0-1H13v-1.5a.5.5 0 0 1 .5-.5z" />
-            </svg>{" "}
-            Open File
-          </Button>
+          <>
+            {props.record.current_facility ===
+            parseInt(sessionStorage.getItem("hmis")) ? (
+              <>
+                <Button
+                  onClick={() => {
+                    setSelectedClient(true);
+                    setClientUuid(props.record.client_uuid);
+                    setArt(props.record.art_number);
+                    setNupn(props.record.patient_nupn);
+                    setClientFirstName(props.record.first_name);
+                    setClientLastName(props.record.surname);
+                    setClientAge(props.record.age);
+                    setClientPhone(props.record.mobile_phone_number);
+                    setClientDob(props.record.date_of_birth);
+                    setClientSex(props.record.sex);
+                    setRemoteFile(false);
+                  }}
+                  variant="primary"
+                  className="btn-sm"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                    className="text-white bi bi-folder-plus"
+                    viewBox="0 0 16 16"
+                  >
+                    <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z" />
+                    <path d="M13.5 10a.5.5 0 0 1 .5.5V12h1.5a.5.5 0 1 1 0 1H14v1.5a.5.5 0 1 1-1 0V13h-1.5a.5.5 0 0 1 0-1H13v-1.5a.5.5 0 0 1 .5-.5z" />
+                  </svg>{" "}
+                  Open File
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => {
+                    setSelectedClient(true);
+                    setClientUuid(props.record.client_uuid);
+                    setArt(props.record.art_number);
+                    setNupn(props.record.patient_nupn);
+                    setClientFirstName(props.record.first_name);
+                    setClientLastName(props.record.surname);
+                    setClientAge(props.record.age);
+                    setClientPhone(props.record.mobile_phone_number);
+                    setClientDob(props.record.date_of_birth);
+                    setClientSex(props.record.sex);
+                    setClientRegistrationFacility(
+                      props.record.current_facility
+                    );
+                    setIsTransfered(props.record.client_status);
+
+                    setRemoteFile(true);
+                  }}
+                  variant="primary"
+                  className="btn-sm"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    fill="currentColor"
+                    className="text-white bi bi-folder-plus"
+                    viewBox="0 0 16 16"
+                  >
+                    <path d="m.5 3 .04.87a1.99 1.99 0 0 0-.342 1.311l.637 7A2 2 0 0 0 2.826 14H9v-1H2.826a1 1 0 0 1-.995-.91l-.637-7A1 1 0 0 1 2.19 4h11.62a1 1 0 0 1 .996 1.09L14.54 8h1.005l.256-2.819A2 2 0 0 0 13.81 3H9.828a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 6.172 1H2.5a2 2 0 0 0-2 2zm5.672-1a1 1 0 0 1 .707.293L7.586 3H2.19c-.24 0-.47.042-.683.12L1.5 2.98a1 1 0 0 1 1-.98h3.672z" />
+                    <path d="M13.5 10a.5.5 0 0 1 .5.5V12h1.5a.5.5 0 1 1 0 1H14v1.5a.5.5 0 1 1-1 0V13h-1.5a.5.5 0 0 1 0-1H13v-1.5a.5.5 0 0 1 .5-.5z" />
+                  </svg>{" "}
+                  Open | Remote File
+                </Button>
+              </>
+            )}
+          </>
         </ButtonGroup>
       </>
     );
   };
-
   // search table fields
   const searchTableFields = [
     {
@@ -299,6 +383,7 @@ const Search = () => {
       exactFilterable: true,
       sortable: true,
     },
+
     {
       name: "",
       displayName: "",
@@ -433,6 +518,7 @@ const Search = () => {
       setVerifyOtp(true);
     }
   };
+
   // appointments create
 
   const [appointmentType, setAppointmentType] = React.useState("empty");
@@ -442,7 +528,38 @@ const Search = () => {
   const [communityAssigned, setCommunityAssigned] = React.useState("empty");
   const [updateContact, setUpdateContact] = React.useState("empty");
   const [comments, setComments] = React.useState("empty");
+  // send notification
 
+  const [appointmentCategory, setAppointmentCategory] = React.useState("");
+
+  // if (appointmentCategory === 1) {
+  //   setAppointmentCategory("Pharmacy pick up");
+  // } else if (appointmentCategory === 2) {
+  //   setAppointmentCategory("Clinical visit");
+  // } else if (appointmentCategory === 3) {
+  //   setAppointmentCategory("Viral load collection");
+  // } else {
+  //   setAppointmentCategory("Pharmacy pick up");
+  // }
+  const facility_name = sessionStorage.getItem("name");
+
+  const notificationHandler = async () => {
+    await axios
+      .post("/api/v1/notifications/create", {
+        // message: notificationMessage,
+        first_name: clientFirstName,
+        last_name: clientLastName,
+        facility: facility_name,
+        send_to: clientRegistrationFacility,
+        appointment: appointmentType,
+      })
+      .then((response) => {
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.log(error.message);
+      });
+  };
   // appointment modal
   const [appointmentModal, setAppointmentModal] = React.useState(false);
   const hmis = sessionStorage.getItem("hmis");
@@ -496,18 +613,13 @@ const Search = () => {
   // const [] = React.useState("null");
   // delete
   const deletedBtn = async () => {
-    const request = await axios.get(
-      `/api/v1/client/contact/delete/${contactId}`
-    );
-    if (request.data.status === 200) {
-      Swal.fire({
-        title: "Success",
-        icon: "success",
-        text: request.data.message,
-        confirmButtonText: "Exit",
-        confirmButtonColor: "#007bbf",
+    await axios
+      .get(`/api/v1/client/contact/delete/${contactId}`)
+      .then((response) => {
+        if (response.data.status === 200) {
+          toast.success(response.data.message);
+        }
       });
-    }
   };
   const addBaby = async () => {
     const request = await axios.get(
@@ -679,28 +791,34 @@ const Search = () => {
 
   const btnTransfer = async () => {
     const hmis = sessionStorage.getItem("hmis");
-    const request = await axios.get(
-      `api/v1/facility/client/transfer/${hmis}/${art}/${nupn}/${clientFirstName}/${clientLastName}/${clinicianTransfer}/${title}/${clinicianPhone}/${facilityTransfer}/${clientUuid}`
-    );
-    if (request.data.status === 200) {
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: request.data.message,
-        confirmButtonText: "Exit",
-        confirmButtonColor: "#007bbf",
+    await axios
+      .post("api/v1/facility/client/transfer", {
+        hmis: hmis,
+        art: art,
+        nupn: nupn,
+        clientfn: clientFirstName,
+        clientln: clientLastName,
+        clinician: clinicianTransfer,
+        title: title,
+        clinicianphone: clinicianPhone,
+        facility: facilityTransfer,
+        uuid: clientUuid,
+        date_of_birth: clientDob,
+        sex: clientSex,
+        nameFacility: sessionStorage.getItem("name"),
+      })
+      .then((response) => {
+        if (response.data.status === 200) {
+          toast.success(response.data.message);
+          setTransferModal(false);
+        } else if (response.data.status === 401) {
+          toast.warn(response.data.message);
+          setTransferModal(false);
+        }
+      })
+      .catch((error) => {
+        toast.success(error.message);
       });
-      setTransferModal(false);
-    } else if (request.data.status === 401) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: request.data.message,
-        confirmButtonText: "Exit",
-        confirmButtonColor: "#007bbf",
-      });
-      setTransferModal(false);
-    }
   };
   // baby data
   useEffect(
@@ -1109,6 +1227,43 @@ const Search = () => {
           {selectedClient ? (
             <>
               <div className="row">
+                <div className="col-md-12">
+                  {isTransfered ? (
+                    <>
+                      {" "}
+                      <Alert
+                        variant="info"
+                        style={{
+                          width: "inherit",
+                          margin: "auto",
+                          marginBottom: 20,
+                          fontFamily: "Roboto",
+                          fontSize: "14px",
+                        }}
+                      >
+                        <strong>Pending transfer</strong>
+                        <p>
+                          The recipient of care has an active pending transfer.
+                          Please click the accept button if he/she wishes to
+                          access treatment from{" "}
+                          <strong>{sessionStorage.getItem("name")}</strong>
+                        </p>
+
+                        <Button
+                          variant="success"
+                          onClick={() => {
+                            acceptTransfer();
+                            setIsTransfered(false);
+                          }}
+                        >
+                          Accept
+                        </Button>
+                      </Alert>
+                    </>
+                  ) : (
+                    <></>
+                  )}
+                </div>
                 <div className="col-md-4">
                   <div className="media">
                     <div className="image">
@@ -1211,25 +1366,46 @@ const Search = () => {
                       </svg>{" "}
                       Back
                     </Button>
-                    <Button
-                      onClick={() => {
-                        setTransferModal(true);
-                      }}
-                      className="btn-sm btn-block"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        className="text-white bi bi-truck"
-                        viewBox="0 0 16 16"
-                      >
-                        <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
-                      </svg>
-                      {"   "}
-                      Transfer
-                    </Button>
+                    {remoteFile ? (
+                      <>
+                        <Button disabled={true} className="btn-sm btn-block">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            fill="currentColor"
+                            className="text-white bi bi-truck"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+                          </svg>
+                          {"   "}
+                          Transfer
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => {
+                            setTransferModal(true);
+                          }}
+                          className="btn-sm btn-block"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            fill="currentColor"
+                            className="text-white bi bi-truck"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+                          </svg>
+                          {"   "}
+                          Transfer
+                        </Button>
+                      </>
+                    )}
                     <Button
                       onClick={() => {
                         downloadCardHandler();
@@ -1259,7 +1435,7 @@ const Search = () => {
                     </Tab>
                     <Tab title="Active Appointments" eventKey="app">
                       <br />
-                      <Container>
+                      <Container style={{ position: "relative" }}>
                         <h5>
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -1541,28 +1717,60 @@ const Search = () => {
           >
             <Tab title={<>Search Facility</>} eventKey="facility">
               <h5 className="component">
-                <Button
-                  style={{ marginBottom: 50 }}
-                  className="float-end "
-                  onClick={() => {
-                    setNewClientModal(true);
-                  }}
-                  variant="success"
-                >
-                  Add Recipient
-                </Button>
+                {results ? (
+                  <> </>
+                ) : (
+                  <>
+                    <Button
+                      style={{
+                        position: "absolute",
+                        bottom: 50,
+                        marginBottom: 50,
+                        borderRadius: "50%",
+                        height: 70,
+                        width: 70,
+                        right: 250,
+                      }}
+                      className="float-end "
+                      onClick={() => {
+                        setNewClientModal(true);
+                      }}
+                      variant="primary"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        fill="currentColor"
+                        class="bi bi-person-plus-fill"
+                        viewBox="0 0 16 16"
+                      >
+                        <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                        <path
+                          fill-rule="evenodd"
+                          d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"
+                        />
+                      </svg>
+                    </Button>
+                  </>
+                )}
               </h5>
-              <Container>
-                <div className="form-search">
+              <Container
+                style={{
+                  position: "relative",
+                  height: "inherit",
+                  paddingBottom: "100px",
+                }}
+              >
+                <div className="form-search border" style={{ padding: 20 }}>
+                  <div className="alert alert-info">
+                    <i className="fa fa-info-circle" aria-hidden="true"></i>{" "}
+                    Please select the search modality to continue.
+                  </div>
+                  <hr />
                   <div className="row">
                     <div className="col-md-5 search-buttons">
                       {/* search buttons */}
-                      <h5
-                        className="text-secondary"
-                        style={{ fontSize: "14px" }}
-                      >
-                        Click button to search
-                      </h5>
                       <div className="d-grid gap-2">
                         <Button
                           onClick={() => {
@@ -1570,8 +1778,9 @@ const Search = () => {
                             setSearchById(false);
                             setSearchByNames(true);
                             setSearchByPhone(false);
+                            setSearchType(1);
                           }}
-                          // className="btn-sm "
+                          className="btn-lg"
                           variant="outline-secondary"
                         >
                           <svg
@@ -1594,9 +1803,10 @@ const Search = () => {
                             setSearchById(false);
                             setSearchByNames(false);
                             setSearchByPhone(false);
+                            setSearchType(2);
                           }}
-                          // className="btn-sm "
-                          variant="outline-secondary"
+                          className="btn-lg"
+                          variant="secondary"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -1616,6 +1826,7 @@ const Search = () => {
                             CaptureBiometricFinger();
                           }}
                           variant="outline-secondary"
+                          className="btn-lg"
                         >
                           {" "}
                           <svg
@@ -1642,8 +1853,9 @@ const Search = () => {
                               setSearchById(false);
                               setSearchByNames(false);
                               setSearchByPhone(true);
+                              setSearchType(3);
                             }}
-                            className="btn-sm"
+                            className="btn-lg"
                             variant="outline-primary"
                           >
                             {/* <svg
@@ -1668,6 +1880,7 @@ const Search = () => {
                               setSearchById(true);
                               setSearchByNames(false);
                               setSearchByPhone(false);
+                              setSearchType(4);
                             }}
                             variant="secondary"
                             className="btn-sm"
@@ -1710,7 +1923,7 @@ const Search = () => {
                               <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
                             </svg>
                             <br />
-                            Searching by names
+                            Recipient Fullnames
                             <br />
                           </h4>
                           <div className="input-icon">
@@ -1814,7 +2027,7 @@ const Search = () => {
                             </svg>
                             {"  "}
                             <br />
-                            Searching by Art / Nupn
+                            Recipient ID
                             <br />
                           </h4>
                           <div className="input-icon">
@@ -1858,7 +2071,7 @@ const Search = () => {
                               <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z" />
                             </svg>
                             <br />
-                            Searching by Phone Number
+                            Recipient Phone Number
                             <br />
                           </h4>
                           <div className="input-icon">
@@ -2350,6 +2563,7 @@ const Search = () => {
           <Button
             onClick={() => {
               bookAppointment();
+              notificationHandler();
             }}
           >
             Submit
@@ -2840,18 +3054,20 @@ const Search = () => {
               width="26"
               height="26"
               fill="currentColor"
-              className="bi bi-plus-circle"
+              className="text-primary bi bi-plus-circle"
               viewBox="0 0 16 16"
             >
               <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
               <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
             </svg>
-            {"   "}Transfer client to another institution
+            {"  "}
+            Transfer client to another institution
           </h5>
         </Modal.Header>
         <Modal.Body className="bg-light">
           <div className="row">
             <div className="col-md-12">
+              <label>Clinician</label>
               <FormControl
                 onChange={(e) => {
                   setClinicianTransfer(e.target.value);
@@ -2862,7 +3078,7 @@ const Search = () => {
               <br />
             </div>
             <div className="col-md-6">
-              {" "}
+              <label>Title </label>
               <FormControl
                 onChange={(e) => {
                   setTitle(e.target.value);
@@ -2873,7 +3089,7 @@ const Search = () => {
               <br />
             </div>
             <div className="col-md-6">
-              {" "}
+              <label>Clinician's Mobile Phone </label>
               <FormControl
                 onChange={(e) => {
                   setClinicianPhone(e.target.value);
@@ -2884,6 +3100,7 @@ const Search = () => {
               <br />
             </div>
             <div className="col-md-6">
+              <label>Province</label>
               <select
                 onChange={(e) => {
                   setSelectProvince(e.target.value);
@@ -2891,7 +3108,7 @@ const Search = () => {
                 className="form-control"
               >
                 <optgroup label="Provinces">
-                  <option disabled>Select Province</option>
+                  <option>Select Province</option>
                   {province.map((row) => (
                     <option key={row.id} value={row.id}>
                       {row.province}
@@ -2901,12 +3118,14 @@ const Search = () => {
               </select>
             </div>
             <div className="col-md-6">
+              <label>District</label>
               {selectDistrict ? (
                 <>
                   <select
                     onChange={(e) => setSelectDistrict(e.target.value)}
                     className="form-control"
                   >
+                    <option>Select district</option>
                     {district.map((row) => (
                       <option key={row.id} value={row.id}>
                         {row.district}
@@ -2925,7 +3144,7 @@ const Search = () => {
               )}{" "}
             </div>
             <div className="col-md-12">
-              <br />
+              <label>Facility</label>
               <select
                 onChange={(e) => {
                   setFacilityTransfer(e.target.value);
@@ -2938,7 +3157,7 @@ const Search = () => {
                     <option key={row.id} value={row.hmis_code}>
                       {row.facility_name}
                     </option>
-                  ))}{" "}
+                  ))}
                 </optgroup>
               </select>
             </div>
@@ -3155,6 +3374,56 @@ const Search = () => {
             className="btn-sm"
           >
             Scan Finger
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      {/* Search by phone */}
+      <Modal show={showVerificationForm}>
+        <Modal.Body>
+          <div className="veriform">
+            <div className="input">
+              <h3 class="text-center">Verification OTP</h3>
+              <br />
+              <FormControl
+                onChange={(e) => {
+                  setTokenID(e.target.value);
+                }}
+                style={{ height: 50 }}
+              />
+              <br />{" "}
+              <p className="text-muted text-center">
+                Use the temporal OTP number sent to the clients handset
+              </p>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setShowVerificationForm(false);
+            }}
+          >
+            Exit
+          </Button>
+          <Button
+            onClick={() => {
+              optSearchHandler();
+            }}
+            variant="primary"
+          >
+            Submit
           </Button>
         </Modal.Footer>
       </Modal>

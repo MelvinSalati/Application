@@ -1,60 +1,155 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Avatar from "react-avatar";
 import FormControl from "react-bootstrap/FormControl";
 import Accordion from "react-bootstrap/Accordion";
 import Container from "react-bootstrap/esm/Container";
 import FilterableTable from "react-filterable-table";
 import axios from "../../requestHandler";
-import Axios from "axios";
-import Echo from "laravel-echo";
-import Pusher from "pusher-js";
-// import env from
-// import Messagebox from "./Messagebox";
-
+import { ButtonGroup, Button } from "react-bootstrap";
+import useRemoteNotifications from "../functions/useRemoteNotifications";
+import { ToastContainer, toast } from "react-toastify";
+import Alert from "react-bootstrap/Alert";
 const Notices = () => {
-  // messages
-  // 1
-  const [messages, setMessages] = React.useState([]);
-  const [message, setMessage] = React.useState([]);
-  useEffect(() => {
-    // 2
-    Axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL;
-    // 3
-    const echo = new Echo({
-      broadcaster: "pusher",
-      key: process.env.REACT_APP_MIX_ABLY_PUBLIC_KEY,
-      wsHost: "realtime-pusher.ably.io",
-      wsPort: 443,
-      disableStats: true,
-      encrypted: true,
-    });
-    // 4
-    echo
-      .channel("public.room")
-      .subscribed(() => {
-        console.log("You are subscribed");
-      })
-      // 5
-      .listen(".message.new", (data) => {
-        // 6
-        setMessages((oldMessages) => [...oldMessages, data]);
-        setMessage("");
-      });
-  }, []);
   const hmis = sessionStorage.getItem("hmis");
-  const [data, setData] = React.useState([]);
-  useEffect(() => {
-    async function getNotifications() {
-      const request = await axios.get(
-        `api/v1/facility/notifications/new/${hmis}`
-      );
-      setData(request.data.notifications);
-      console.log(request.data);
-    }
+  const [remoteNotifications, setRemoteNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    getNotifications();
+  useEffect(() => {
+    async function notifications() {
+      await axios
+        .get(`api/v1/notifications/show/${hmis}`)
+        .then((response) => {
+          setRemoteNotifications(response.data.notifications);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          toast.warn(error.message);
+          setIsLoading(false);
+        });
+    }
+    notifications();
   }, []);
 
+  // Remove item from list
+  const [serialNumber, setSerialNumber] = useState();
+  const [notificationId, setNotificationId] = useState("");
+
+  const removeItem = () => {
+    var ind = remoteNotifications.findIndex(function (element) {
+      return element.sn === serialNumber;
+    });
+    if (ind !== -1) {
+      remoteNotifications.splice(ind, 1);
+    }
+  };
+
+  const markAsSeenHandler = async (notificationId) => {
+    if (notificationId > 0) {
+      await axios
+        .post("api/v1/notifications/read", {
+          notificationID: notificationId,
+        })
+        .then((response) => {
+          if (response.status === 200) {
+            toast.success("Notificationn status updated!");
+          }
+        })
+        .catch((error) => {
+          toast.warn(error.message);
+        });
+    } else {
+      toast.warn("Click read notifcation again!");
+    }
+  };
+  const notificationIdHandler = (event) => {
+    setNotificationId(event);
+    markAsSeenHandler(event);
+    removeItem();
+  };
+
+  const [notificationType, setNotificationType] = useState(2);
+  const tableBtn = (props) => {
+    return (
+      <>
+        {notificationType === 1 ? (
+          <>
+            {/* show buttons for transfers */}
+            <ButtonGroup>
+              <Button variant="outline-danger">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  classname="text-primary bi bi-check-circle-fill"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                </svg>
+              </Button>
+              <Button variant="primary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  className="bi bi-cloud-download-fill"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0zm-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z"
+                  />
+                </svg>
+              </Button>
+            </ButtonGroup>
+          </>
+        ) : (
+          <>
+            {/* notifications items */}
+            <ButtonGroup>
+              <Button
+                variant="outline-primary"
+                onClick={() => {
+                  setSerialNumber(props.record.SN);
+                  notificationIdHandler(props.record.id);
+                }}
+                className="btn-sm"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  classname="text-primary bi bi-check-circle-fill"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                </svg>
+                {"  "}
+                Mark as seen
+              </Button>
+              {/* <Button variant="primary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  className="bi bi-cloud-download-fill"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0zm-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z"
+                  />
+                </svg>
+              </Button> */}
+            </ButtonGroup>
+          </>
+        )}
+      </>
+    );
+  };
   const fields = [
     {
       name: "SN",
@@ -71,7 +166,13 @@ const Notices = () => {
       displayName: "Message",
       inputFilterable: true,
     },
+    {
+      name: "",
+      displayName: "Action",
+      render: tableBtn,
+    },
   ];
+
   return (
     <>
       <h1 className="h5 component">
@@ -86,20 +187,62 @@ const Notices = () => {
           <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V7zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z" />
         </svg>
         {"    "}
-        Notices
+        Manage Notifications
       </h1>
       <center>
-        <Container style={{ height: "540px" }}>
-          {/* <FilterableTable
-            data={data}
-            fields={fields}
-            pageSize={6}
-            pageSizes={false}
-            topPagerVisible={false}
-          /> */}
-          {data}
+        <Container>
+          {isLoading ? (
+            <>
+              <i className="fa fa-spinner fa-spin fa-3x"></i>
+              <h3 className="text-muted">Please wait..</h3>
+            </>
+          ) : (
+            <>
+              {remoteNotifications.length > 0 ? (
+                <>
+                  {" "}
+                  <FilterableTable
+                    data={remoteNotifications}
+                    fields={fields}
+                    pageSize={6}
+                    pageSizes={false}
+                    topPagerVisible={false}
+                    tableClassName="table table-bordeered"
+                  />
+                </>
+              ) : (
+                <>
+                  {/* no notification found  */}
+                  <Container
+                    style={{ height: 300, color: "#AAA", paddingTop: 100 }}
+                  >
+                    <i
+                      className="fa fa-info-circle fa-3x text-center"
+                      aria-hidden="true"
+                    ></i>
+                    <h4 className="text-center h3">
+                      {" "}
+                      No Notifications available
+                    </h4>
+                  </Container>
+                </>
+              )}
+            </>
+          )}
         </Container>
       </center>
+      {/* Toast container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </>
   );
 };

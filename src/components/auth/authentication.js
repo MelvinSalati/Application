@@ -131,7 +131,7 @@ const Authentication = () => {
       <div className="container" id="login">
         <center>
           <img src={Logo} alt="" height={70} width={70} />
-          <h3 className="text-muted">Authentication</h3>
+          <h3 className="text-muted">User Authentication</h3>
         </center>
         <FormGroup>
           <div className="input">

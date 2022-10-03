@@ -1,4 +1,5 @@
 import "./App.css";
+import Client from "./components/find/Client";
 import Authentication from "./components/auth/authentication";
 import Scheduled from "./components/appointments/scheduled";
 import Home from "./components/home/home";
@@ -18,6 +19,7 @@ function App() {
         <Switch>
           <Route exact path="/" component={Authentication} />
           <Route exact path="/app" component={Home} />
+          <Route exact path="/client" component={Client} />
           <Route exact path="/home" component={Scheduled} />
           <Route exact path="/events" component={Events} />
           <Route exact path="/notices" component={Notices} />

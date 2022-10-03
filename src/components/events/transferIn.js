@@ -1,22 +1,23 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
 import FilterableTable from "react-filterable-table";
 import useTransferIn from "../functions/useTransferIn";
 import Modal from "react-bootstrap/Modal";
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
 import axios from "../../requestHandler";
+import { ToastContainer, toast } from "react-toastify";
 
 const TransferIn = () => {
-  const [data, setData] = useTransferIn([]);
+  const [data] = useTransferIn([]);
   //tabs are
-  const [key, setKey] = React.useState("pharmacy");
   const [viewDetailsModal, setViewDetailsModal] = React.useState(false);
   const [clientUuid, setClientUuid] = React.useState("");
   const [pharmacyHistory, setPharmacyHistory] = React.useState([]);
-  const [labHistory, setLabHistory] = React.useState("");
-
+  const [actionModal, setActionModal] = React.useState(false);
+  const [serialNumber, setSerialNumber] = useState("");
+  const hmis = sessionStorage.getItem("hmis");
+  const [transferData, setTransferData] = React.useState([]);
+  const [reload, setReload] = useState(true);
   useEffect(() => {
     async function appointmentHistory() {
       const request = await axios.get(
@@ -26,15 +27,35 @@ const TransferIn = () => {
     }
     appointmentHistory();
   }, [clientUuid]);
-  // useEffect(() => {
-  //   async function acceptTransfer() {
-  //     const request = await axios.get(
-  //       `/api/v1/client/transfer/accept/${clientUuid}`
-  //     );
-  //     setPharmacyHistory(request.data.pharmacy);
-  //   }
-  //   acceptTransfer();
-  // }, [clientUuid]);
+
+  useEffect(() => {
+    async function getTransferList() {
+      await axios
+        .get(`/api/v1/facility/transferin/${hmis}`)
+        .then((response) => {
+          setTransferData(response.data.list);
+        });
+    }
+    getTransferList();
+  }, [clientUuid, hmis]);
+
+  const acceptTransferHandler = async () => {
+    await axios
+      .get(`/apaccepti/v1/client/transfer/${clientUuid}/${hmis}`)
+      .then((response) => {
+        setPharmacyHistory(response.data.transfer);
+        if (response.data.transfer.status === 404) {
+          toast.warn(response.data.message);
+        } else if (response.data.transfer.status === 200) {
+          toast.success(response.data.transfer.message);
+          // removeItem();
+        }
+        setActionModal(false);
+      })
+      .catch((error) => {
+        toast.warn(error.message);
+      });
+  };
 
   const tableBtn = (props) => {
     return (
@@ -59,10 +80,18 @@ const TransferIn = () => {
               <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM4.5 9a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM4 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 1 0-1h4a.5.5 0 0 1 0 1h-4z" />
             </svg>
             {"  "}
-            View details
+            Previous Appointment (s)
           </Button>
-          {/* <Button variant="primary" className="btn-sm">
-            Accept Transfer
+          {/* <Button
+            variant="primary"
+            className="btn-sm"
+            onClick={() => {
+              setActionModal(true);
+              setClientUuid(props.record.ArtNumber);
+              setReload(false);
+            }}
+          >
+            Take Action
           </Button> */}
         </ButtonGroup>
       </>
@@ -118,7 +147,7 @@ const TransferIn = () => {
         Incoming Recipients
       </h5>
       <FilterableTable
-        data={data}
+        data={transferData}
         fields={tableFields}
         pageSize={8}
         pageSizes={false}
@@ -132,63 +161,34 @@ const TransferIn = () => {
           setViewDetailsModal(false);
         }}
       >
-        <Modal.Header
-          style={{ backgroundColor: "#F4F4F4" }}
-          className="border-bottom"
-          closeButton
-        >
+        <Modal.Header className="border-bottom" closeButton>
           <h5>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
               height="24"
               fill="currentColor"
-              className="bi bi-clock-fill"
+              className="text-primary bi bi-clock-fill"
               viewBox="0 0 16 16"
             >
               <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
             </svg>{" "}
-            Previous Appointments
+            Appointments
           </h5>
         </Modal.Header>
-        <Modal.Body style={{ padding: "10px", height: "400px" }}>
-          <br />
-          <Tabs
-            onSelect={(k) => {
-              setKey(k);
-            }}
-            activeKey={key}
-            // className="bg-light"
-          >
-            <Tab title="Last Pharmacy Appointment" eventKey="pharmacy">
-              {/* {pharmacyHistory} */}
-              <br />
-              <FilterableTable
-                data={pharmacyHistory}
-                fields={fields}
-                pageSize={8}
-                pageSizes={false}
-                topPagerVisible={false}
-              />
-            </Tab>
-            {/* <Tab
-              style={modalStyle}
-              title="Laboratory Appointments"
-              eventKey="lab"
-            >
-              <br />
-              <center>
-                <i className="fas fa-vials fa-4x"></i>
-                <h3>Previous Viral Load Results</h3>
-                <hr></hr>
-                <h1 className="text-primary">500 copies/Ml</h1>
-              </center>
-
-              {labHistory}
-            </Tab> */}
-          </Tabs>
+        <Modal.Body
+          className="bg-light"
+          style={{ padding: "10px", height: "400px" }}
+        >
+          <FilterableTable
+            data={pharmacyHistory}
+            fields={fields}
+            pageSize={8}
+            pageSizes={false}
+            topPagerVisible={false}
+          />
         </Modal.Body>
-        <Modal.Footer className="bg-light">
+        <Modal.Footer className="bg-white">
           <Button
             onClick={() => {
               setViewDetailsModal(false);
@@ -198,6 +198,53 @@ const TransferIn = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      {/* <Modal show={actionModal} style={{ color: "#333", fontFamily: "roboto" }}>
+        <Modal.Header>
+          <h5>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="26"
+              height="26"
+              fill="currentColor"
+              className="text-primary bi bi-info-circle-fill"
+              viewBox="0 0 16 16"
+            >
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+            </svg>
+            {"  "}
+            Accept Transfer
+          </h5>
+        </Modal.Header>
+        <Modal.Body className="bg-ligt">
+          <p>Please take note of the following</p>
+          <p>
+            - Accepting transfer means the client automatically become part of
+            your treatment current.
+          </p>
+          <p>- The last appointments will be tracked by your facility.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            onClick={() => {
+              setActionModal(true);
+              acceptTransferHandler();
+            }}
+          >
+            Submit
+          </Button>
+        </Modal.Footer>
+      </Modal> */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </>
   );
 };
