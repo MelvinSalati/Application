@@ -2594,7 +2594,6 @@ const Search = () => {
                   <option value="">Select Appointments</option>
                   <option value="1">AZT+3TC+NVP</option>
                   <option value="2">Co-trimoxazole</option>
-                  <option value="" disabled disabled></option>
                   <option value="3">Serological Test</option>
                   <option value="4">Nucleic Acid Testing</option>
                 </optgroup>
