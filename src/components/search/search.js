@@ -680,20 +680,9 @@ const Search = () => {
               setViewBabyAppointmentModal(true);
               setBabyID(props.record.babyid);
             }}
-            variant="outline-secondary"
-            className="btn-sm border-0"
+            variant="outline-primary"
+            className="btn-sm"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              fill="currentColor"
-              className="text-primary bi bi-bookmark-plus-fill"
-              viewBox="0 0 16 16"
-            >
-              <path d="M2 15.5V2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.74.439L8 13.069l-5.26 2.87A.5.5 0 0 1 2 15.5zm6.5-11a.5.5 0 0 0-1 0V6H6a.5.5 0 0 0 0 1h1.5v1.5a.5.5 0 0 0 1 0V7H10a.5.5 0 0 0 0-1H8.5V4.5z" />
-            </svg>
-            {"  "}
             View
           </Button>
           <Button
@@ -701,22 +690,12 @@ const Search = () => {
               setBabyID(props.record.babyid);
               setCreateBabyAppointmentModal(true);
             }}
-            variant="outline-secondary"
+            variant="primary"
             className="btn-sm border-0"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              fill="currentColor"
-              className="text-primary bi bi-plus-circle-fill"
-              viewBox="0 0 16 16"
-            >
-              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z" />
-            </svg>
-            {"  "}
             Book Appointment
           </Button>
+          <Button variant="outline-primary">EID Report</Button>
         </ButtonGroup>
       </>
     );
@@ -1532,7 +1511,7 @@ const Search = () => {
                         <br />
                       </Container>
                     </Tab>
-                    {/* <Tab title="Manage Emtct" eventKey="emtct">
+                    <Tab title="Manage Emtct" eventKey="emtct">
                       <Container>
                         <br />
                         <h5>
@@ -1548,30 +1527,38 @@ const Search = () => {
                             <path d="M5.5.5a.5.5 0 0 0-1 0V2A2.5 2.5 0 0 0 2 4.5H.5a.5.5 0 0 0 0 1H2v1H.5a.5.5 0 0 0 0 1H2v1H.5a.5.5 0 0 0 0 1H2v1H.5a.5.5 0 0 0 0 1H2A2.5 2.5 0 0 0 4.5 14v1.5a.5.5 0 0 0 1 0V14h1v1.5a.5.5 0 0 0 1 0V14h1v1.5a.5.5 0 0 0 1 0V14h1v1.5a.5.5 0 0 0 1 0V14a2.5 2.5 0 0 0 2.5-2.5h1.5a.5.5 0 0 0 0-1H14v-1h1.5a.5.5 0 0 0 0-1H14v-1h1.5a.5.5 0 0 0 0-1H14v-1h1.5a.5.5 0 0 0 0-1H14A2.5 2.5 0 0 0 11.5 2V.5a.5.5 0 0 0-1 0V2h-1V.5a.5.5 0 0 0-1 0V2h-1V.5a.5.5 0 0 0-1 0V2h-1V.5zm1 4.5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5v-3A1.5 1.5 0 0 1 6.5 5z" />
                           </svg>{" "}
                           {"  "}
-                          Registered Active Babies
-                          <Button
-                            onClick={() => {
-                              setAddBabyModal(true);
-                            }}
-                            variant="primary"
-                            className="btn-sm float-end border-0"
-                            style={{ borderRadius: "25px" }}
-                          >
-                            {" "}
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              fill="currentColor"
-                              className="text-white bi bi-plus-circle"
-                              viewBox="0 0 16 16"
+                          Mother Infant Pair Management
+                          <ButtonGroup className="float-end border-0">
+                            <Button
+                              onClick={() => {
+                                setAddBabyModal(true);
+                              }}
+                              variant="primary"
+                              className="btn-sm float-end border-0"
+                              style={{ borderRadius: "0px" }}
                             >
-                              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-                              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
-                            </svg>
-                            {"    "}
-                            Add Baby
-                          </Button>
+                              {" "}
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                fill="currentColor"
+                                className="text-white bi bi-plus-circle"
+                                viewBox="0 0 16 16"
+                              >
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                              </svg>
+                              {"    "}
+                              Add Baby
+                            </Button>
+                            <Button variant="outline-primary">
+                              Mother Pack Appointments
+                            </Button>
+                            <Button variant="outline-primary">
+                              Enroll Mother
+                            </Button>
+                          </ButtonGroup>
                         </h5>
                         <hr />
                         <FilterableTable
@@ -1582,7 +1569,7 @@ const Search = () => {
                           pageSizes={false}
                         />
                       </Container>
-                    </Tab> */}
+                    </Tab>
                     <Tab title="Address Book" eventKey="contacts">
                       <Container>
                         <br />
@@ -1723,13 +1710,13 @@ const Search = () => {
                   <>
                     <Button
                       style={{
-                        position: "absolute",
-                        bottom: 50,
-                        marginBottom: 50,
-                        borderRadius: "50%",
+                        // position: "absolute",
+                        // bottom: 50,
+                        // marginBottom: 50,
+                        // borderRadius: "50%",
                         height: 70,
-                        width: 70,
-                        right: 250,
+                        // width: 70,
+                        // right: 250,
                       }}
                       className="float-end "
                       onClick={() => {
@@ -1751,6 +1738,7 @@ const Search = () => {
                           d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"
                         />
                       </svg>
+                      Add Client
                     </Button>
                   </>
                 )}

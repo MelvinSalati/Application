@@ -2,8 +2,6 @@ import React from "react";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import PatientLevel from "./patientlevel";
-import Aggregations from "./aggregates";
-import ReportActivities from "./activities";
 const Report = () => {
   const [key, setKey] = React.useState("list");
 
