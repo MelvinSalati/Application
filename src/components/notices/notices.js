@@ -7,12 +7,13 @@ import FilterableTable from "react-filterable-table";
 import axios from "../../requestHandler";
 import { ButtonGroup, Button } from "react-bootstrap";
 import useRemoteNotifications from "../functions/useRemoteNotifications";
-import { ToastContainer, toast } from "react-toastify";
-import Alert from "react-bootstrap/Alert";
+import Notiflix from "notiflix";
+import { Notify } from "notiflix";
+import NavbarScreen from "../navbar/navbar";
 const Notices = () => {
   const hmis = sessionStorage.getItem("hmis");
   const [remoteNotifications, setRemoteNotifications] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  Notiflix.Loading.circle("Loading...");
 
   useEffect(() => {
     async function notifications() {
@@ -20,12 +21,11 @@ const Notices = () => {
         .get(`api/v1/notifications/show/${hmis}`)
         .then((response) => {
           setRemoteNotifications(response.data.notifications);
-          setIsLoading(false);
         })
         .catch((error) => {
-          toast.warn(error.message);
-          setIsLoading(false);
+          Notify.warning(error.message);
         });
+      Notiflix.Loading.remove();
     }
     notifications();
   }, []);
@@ -51,15 +51,16 @@ const Notices = () => {
         })
         .then((response) => {
           if (response.status === 200) {
-            toast.success("Notificationn status updated!");
+            Notify.success("Notificationn status updated!");
           }
         })
         .catch((error) => {
-          toast.warn(error.message);
+          Notify.warning(error.message);
         });
     } else {
-      toast.warn("Click read notifcation again!");
+      Notify.warning("Click read notifcation again!");
     }
+    Notiflix.Loading.remove();
   };
   const notificationIdHandler = (event) => {
     setNotificationId(event);
@@ -175,74 +176,59 @@ const Notices = () => {
 
   return (
     <>
-      <h1 className="h5 component">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          fill="currentColor"
-          className="text-primary bi bi-grid-3x3-gap-fill"
-          viewBox="0 0 16 16"
-        >
-          <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V7zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z" />
-        </svg>
-        {"    "}
-        Manage Notifications
-      </h1>
-      <center>
-        <Container>
-          {isLoading ? (
-            <>
-              <i className="fa fa-spinner fa-spin fa-3x"></i>
-              <h3 className="text-muted">Please wait..</h3>
-            </>
-          ) : (
-            <>
-              {remoteNotifications.length > 0 ? (
-                <>
-                  {" "}
-                  <FilterableTable
-                    data={remoteNotifications}
-                    fields={fields}
-                    pageSize={6}
-                    pageSizes={false}
-                    topPagerVisible={false}
-                    tableClassName="table table-bordeered"
-                  />
-                </>
-              ) : (
-                <>
-                  {/* no notification found  */}
-                  <Container
-                    style={{ height: 300, color: "#AAA", paddingTop: 100 }}
-                  >
-                    <i
-                      className="fa fa-info-circle fa-3x text-center"
-                      aria-hidden="true"
-                    ></i>
-                    <h4 className="text-center h3">
-                      {" "}
-                      No Notifications available
-                    </h4>
-                  </Container>
-                </>
-              )}
-            </>
-          )}
-        </Container>
-      </center>
-      {/* Toast container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <NavbarScreen />
+      <Container
+        className="bg-white container content"
+        style={{ marginTop: "4%" }}
+      >
+        <h1 className="h5 component">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="currentColor"
+            className="text-primary bi bi-grid-3x3-gap-fill"
+            viewBox="0 0 16 16"
+          >
+            <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V7zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z" />
+          </svg>
+          {"    "}
+          Manage Notifications
+        </h1>
+        <center>
+          <Container>
+            {remoteNotifications.length > 0 ? (
+              <>
+                {" "}
+                <FilterableTable
+                  data={remoteNotifications}
+                  fields={fields}
+                  pageSize={6}
+                  pageSizes={false}
+                  topPagerVisible={false}
+                  tableClassName="table table-bordeered"
+                />
+              </>
+            ) : (
+              <>
+                {/* no notification found  */}
+                <Container
+                  style={{ height: 300, color: "#AAA", paddingTop: 100 }}
+                >
+                  <i
+                    className="fa fa-info-circle fa-3x text-center"
+                    aria-hidden="true"
+                  ></i>
+                  <h4 className="text-center h3">
+                    {" "}
+                    No Notifications available
+                  </h4>
+                </Container>
+              </>
+            )}
+          </Container>
+        </center>
+      </Container>
     </>
   );
 };

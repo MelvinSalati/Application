@@ -1,105 +1,59 @@
-import React, { useEffect } from "react";
+import React from "react";
+import { Notify } from "notiflix/build/notiflix-notify-aio";
 import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
 import FormGroup from "react-bootstrap/FormGroup";
 import FormControl from "react-bootstrap/FormControl";
 import Navbar from "react-bootstrap/Navbar";
 import Container from "react-bootstrap/Container";
 import "../../App.css";
-import Swal from "sweetalert2";
 import axio from "../../requestHandler";
 import Logo from "./../icon.jpeg";
 import history from "../../history";
-import BiometricDevice from "../../device";
-import axios from "axios";
+import Notiflix from "notiflix";
 
 const Authentication = () => {
-  useEffect(() => {
-    async function appointmentReminder() {
-      const response = await axios
-        .get(`https://broadcaster.v1.smart-umodzi.com/public/reminder`)
-        .then((response) => {
-          console.log("Reminder system running....");
-        })
-        .catch((error) => {
-          console.log("Reminder system not running due to " + error.message);
-        });
-    }
-    async function appointmentMissed() {
-      const response = await axios
-        .get(`https://broadcaster.v1.smart-umodzi.com/public/missed`)
-        .then((response) => {
-          console.log("Missed appointment reminder system running....");
-        })
-        .catch((error) => {
-          console.log(
-            "Missed appointment reminder system not running due to " +
-              error.message
-          );
-        });
-    }
-
-    async function promptTracking() {
-      const response = await axios
-        .get(`https://broadcaster.v1.smart-umodzi.com/public/instant`)
-        .then((response) => {
-          console.log("Missed appointment reminder system running....");
-        })
-        .catch((error) => {
-          console.log(
-            "Missed appointment reminder system not running due to " +
-              error.message
-          );
-        });
-    }
-    appointmentReminder();
-    appointmentMissed();
-    promptTracking();
-  });
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [buttonState, setButtonState] = React.useState(false);
 
   //biometric device authentication
-  const getToken = async () => {
-    const Token = await BiometricDevice.post(
-      "/api/CloudABISMatchingServers/Token",
-      {
-        BaseAPIURL: "https://fpsvr101.cloudabis.com/v1/",
-        AppKey: "b0a1b0359bbe485fa7d7869ee8a7d5ab",
-        SecretKey: "VNEP7lBLhYkvc5ES3loiEE/Fqs4=",
-      }
-    );
-    //store token in sesion
-    sessionStorage.setItem("token", Token.data.ResponseData.access_token);
+  const [department, setDepartment] = React.useState("");
+  const changeDepartmentHandler = (e) => {
+    setDepartment(e.target.value);
   };
 
   const submitHandler = async (event) => {
     // event.preventDefault();
 
+    if (department === "undefined" || department === "" || department === "0") {
+      return Notify.warning("Please select department to continue!!!", 4000);
+    }
+
     setButtonState(true);
+    Notiflix.Loading.circle("Please wait..");
     const request = await axio.post("api/v1/user/login", {
       email: email,
       password: password,
     });
     if (request.data.status === 200) {
-      history.push("/app");
-      getToken();
-      sessionStorage.setItem("hmis", request.data.facility);
-      sessionStorage.setItem("name", request.data.facility_name);
-      sessionStorage.setItem("username", request.data.username);
-      sessionStorage.setItem("first_name", request.data.first_name);
-      sessionStorage.setItem("last_name", request.data.last_name);
-      sessionStorage.setItem("id", request.data.id);
-      sessionStorage.setItem("phone", request.data.phone);
-      sessionStorage.setItem("lat", request.data.latitude);
-      sessionStorage.setItem("lon", request.data.longitude);
-    } else if (request.data.status === 401) {
-      Swal.fire({
-        text: request.data.message,
-        icon: "warning",
-        confirmButtonText: "Exit",
+      history.push({
+        pathname: "/app",
+        // search: "?name=sudheer",
+        state: {
+          details: {
+            hmis: request.data.facility,
+            name: request.data.facility_name,
+            username: request.data.username,
+            first_name: request.data.first_name,
+            last_name: request.data.last_name,
+            id: request.data.id,
+            phone: request.data.phone,
+            department: department,
+          },
+        },
       });
+    } else if (request.data.status === 401) {
+      Notify.warning(request.data.message);
       setButtonState(false);
     }
   };
@@ -156,6 +110,19 @@ const Authentication = () => {
               type="password"
               placeholder="Password"
             />
+          </div>
+        </FormGroup>
+
+        <FormGroup>
+          <div className="input">
+            <span className="input-icon"></span>
+            <select className="form-control" onChange={changeDepartmentHandler}>
+              <optgroup label="Select Department">
+                <option value="0">Select</option>
+                <option value={1}>General ART</option>
+                <option value={2}>ART MCH Services</option>
+              </optgroup>
+            </select>
           </div>
           <hr />
         </FormGroup>

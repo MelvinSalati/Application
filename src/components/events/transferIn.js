@@ -5,7 +5,7 @@ import FilterableTable from "react-filterable-table";
 import useTransferIn from "../functions/useTransferIn";
 import Modal from "react-bootstrap/Modal";
 import axios from "../../requestHandler";
-import { ToastContainer, toast } from "react-toastify";
+import Notiflix, { Notify } from "notiflix";
 
 const TransferIn = () => {
   const [data] = useTransferIn([]);
@@ -45,15 +45,15 @@ const TransferIn = () => {
       .then((response) => {
         setPharmacyHistory(response.data.transfer);
         if (response.data.transfer.status === 404) {
-          toast.warn(response.data.message);
+          Notify.warning(response.data.message);
         } else if (response.data.transfer.status === 200) {
-          toast.success(response.data.transfer.message);
+          Notify.success(response.data.transfer.message);
           // removeItem();
         }
         setActionModal(false);
       })
       .catch((error) => {
-        toast.warn(error.message);
+        Notify.warning(error.message);
       });
   };
 
@@ -198,53 +198,6 @@ const TransferIn = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-      {/* <Modal show={actionModal} style={{ color: "#333", fontFamily: "roboto" }}>
-        <Modal.Header>
-          <h5>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="26"
-              height="26"
-              fill="currentColor"
-              className="text-primary bi bi-info-circle-fill"
-              viewBox="0 0 16 16"
-            >
-              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
-            </svg>
-            {"  "}
-            Accept Transfer
-          </h5>
-        </Modal.Header>
-        <Modal.Body className="bg-ligt">
-          <p>Please take note of the following</p>
-          <p>
-            - Accepting transfer means the client automatically become part of
-            your treatment current.
-          </p>
-          <p>- The last appointments will be tracked by your facility.</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            onClick={() => {
-              setActionModal(true);
-              acceptTransferHandler();
-            }}
-          >
-            Submit
-          </Button>
-        </Modal.Footer>
-      </Modal> */}
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
     </>
   );
 };

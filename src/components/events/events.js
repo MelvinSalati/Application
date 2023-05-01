@@ -6,12 +6,17 @@ import TreatmentInteruptions from "./interruption";
 import TransferIn from "./transferIn";
 import TransferOut from "./transferOut";
 import Mortality from "./mortality";
+import NavbarScreen from "../navbar/navbar";
 
 const Events = () => {
   const [key, setKey] = React.useState("out");
   return (
     <>
-      <Container>
+      <NavbarScreen />
+      <Container
+        className="bg-white container content"
+        style={{ marginTop: "4%" }}
+      >
         <h5 className="component h5">
           <svg
             xmlns="http://www.w3.org/2000/svg"

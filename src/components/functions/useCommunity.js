@@ -12,6 +12,9 @@ const useCommunity = () => {
     }
     getCommunity();
   }, [hmis]);
+
+  localStorage.setItem("cbv", communityList);
   return [communityList];
 };
+
 export default useCommunity;

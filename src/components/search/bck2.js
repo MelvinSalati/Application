@@ -133,6 +133,201 @@ const Search = () => {
   const [isSearchingFingerPrint, setIsSearchingFingerPrint] =
     React.useState(false);
 
+  const [emtctEnrolled, setEmtctEnrolled] = React.useState("...");
+  const isEnrolled = async () => {
+    await axios.get(`api/v1/emtct/enroll/${clientUuid}`).then((response) => {
+      setEmtctEnrolled(!response.data.status);
+      console.log(response.data.status);
+    });
+  };
+  const CaptureBiometricFinger = async () => {
+    const request = await axios.post(
+      "http://localhost:15896/api/CloudScanr/FPCapture",
+      {
+        CustomerKey: "1848CF9353844080B58154394CA960A6",
+        CaptureType: "SingleCapture",
+        CaptureMode: "TemplateOnly",
+        QuickScan: false,
+      }
+    );
+
+    const CapturedBiometrics = request.data;
+    setCapturedBiometricData(CapturedBiometrics.TemplateData);
+    setMessageResponse(CapturedBiometrics.CloudScanrStatus.Message);
+    if (CapturedBiometrics.CloudScanrStatus.Success === false) {
+      return false;
+    }
+  };
+  const acceptTransfer = async () => {
+    await axios
+      .patch("/api/v1/client/transfer/accept/", {
+        uuid: clientUuid,
+        hmis: hmis,
+      })
+      .then((response) => {
+        if (response.data.transfer.status === 202) {
+          toast.warn(response.data.message);
+          setIsTransfered(false);
+        } else if (response.data.transfer.status === 200) {
+          toast.success(response.data.transfer.message);
+          setIsTransfered(false);
+        }
+      })
+      .catch((error) => {
+        toast.warn(error.message);
+      });
+  };
+  useEffect(() => {
+    if (capturedBiometricData === "false") {
+      return false;
+    } else {
+      const IdentifyFingerPrint = async () => {
+        setIsSearchingFingerPrint(true);
+
+        const request = await processBiometric.post("api/Biometric/Identify", {
+          CustomerKey: "1848CF9353844080B58154394CA960A6",
+          EngineName: "FPFF02",
+          Format: "ISO",
+          CaptureOperationName: "IDENTIFY",
+          QuickScan: true,
+          BiometricXml: capturedBiometricData,
+          AppKey: "b0a1b0359bbe485fa7d7869ee8a7d5ab",
+          SecretKey: "VNEP7lBLhYkvc5ES3loiEE/Fqs4=",
+        });
+
+        setBiometricResults(request.data.DetailResult[0]);
+
+        if (request.data.OperationResult === "INVALID_TEMPLATE") {
+          Swal.fire({
+            icon: "error",
+            text: request.data.OperationResult,
+          });
+          setProcessMsg(false);
+
+          setMessageResponse(false);
+          setIsSearchingFingerPrint(false);
+        } else if (request.data.OperationResult === "NO_MATCH_FOUND") {
+          Swal.fire({
+            icon: "error",
+            text: request.data.OperationResult,
+          });
+
+          setMessageResponse(false);
+          setIsSearchingFingerPrint(false);
+          setProcessMsg(false);
+        } else if (request.data.OperationResult === "MATCH_FOUND") {
+          setMessageResponse("Processing Biometric information...");
+          setId(request.data.DetailResult[0].ID);
+          setIsSearchingFingerPrint(true);
+
+          searchHandler();
+          // alert(id);
+        } else {
+          alert(request.data.OperationResult);
+        }
+      };
+      IdentifyFingerPrint();
+    }
+
+    // if (capturedBiometricData.length) {
+    //   setProcessMsg(false);
+    // }
+  }, [capturedBiometricData, id]);
+  // Search results found
+  const [updateRecordModal, setUpdateRecordModal] = React.useState(false);
+
+  // open update modal
+  const openModalUpdate = () => {
+    setUpdateRecordModal(true);
+  };
+
+  // mother infant appointments
+
+  const [visitDate, setVisitDate] = React.useState(new Date());
+  const [nextAppointmentDate, setNextAppointmentDate] = React.useState();
+  const [mDrupPickUp, setMDrugPickUp] = React.useState(false);
+  const [mViralLoadColletion, setMViralLoadColletion] = React.useState(false);
+  const [mClinicalReview, setMClinicalReview] = React.useState(false);
+  const [pVLSYes, setPVLSYes] = React.useState(false);
+  const [pVLSNo, setPVLSNo] = React.useState(false);
+  const [childsNumber, setChildsNumber] = React.useState("");
+  const [infantCat, setInfantCat] = React.useState(0);
+  const [infantST, setInfantST] = React.useState(false);
+  const [infantDBS, setInfantDBS] = useState(false);
+  const [infantCTX, setInfantCTX] = useState(false);
+  const [infantARVP, setInfantARVP] = useState(false);
+  const [infantARVT, setInafntARVT] = useState(false);
+
+  const visiteDateHandler = (e) => {
+    setVisitDate(e.target.value);
+  };
+  const nextAppointmentDateHandler = (e) => {
+    setNextAppointmentDate(e.target.value);
+  };
+  const mDrugPickUpHandler = (e) => {
+    setMDrugPickUp(e.target.checked);
+  };
+  const mViralLoadCollectionHandler = (e) => {
+    setMViralLoadColletion(e.target.checked);
+  };
+  const mClinicalReviewHandler = (e) => {
+    setMClinicalReview(e.target.checked);
+  };
+  const pVLSYesHandler = (e) => {
+    setPVLSYes(e.target.checked);
+  };
+  const pVLSNoHandler = (e) => {
+    setPVLSNo(e.target.checked);
+  };
+  // infant
+  const childNumberHandler = (e) => {
+    setChildsNumber(e.target.value);
+  };
+  const infantCatHandler = (e) => {
+    setInfantCat(e.target.value);
+  };
+  const infantSThandler = (e) => {
+    setInfantST(e.target.checked);
+  };
+  const infantDBSHandler = (e) => {
+    setInfantDBS(e.target.checked);
+  };
+  const infantCTXHandler = (e) => {
+    setInfantCTX(e.target.checked);
+  };
+  const infantARVPHandler = (e) => {
+    setInfantARVP(e.target.checked);
+  };
+  const infantARVTHandler = (e) => {
+    setInafntARVT(e.target.checked);
+  };
+
+  const createPairAppointment = async (e) => {
+    const params = {
+      vd: visitDate,
+      nd: nextAppointmentDate,
+      pp: mDrupPickUp,
+      cv: mClinicalReview,
+      mv: mViralLoadColletion,
+      pvY: pVLSYes,
+      pvN: pVLSNo,
+      ist: infantST,
+      idb: infantDBS,
+      icx: infantCTX,
+      iap: infantARVP,
+      iav: infantARVT,
+      icat: infantCat,
+      childsNumber: childsNumber,
+      muid: clientUuid,
+    };
+    await axios
+      .post("api/emtct/babymotherpair/create", params)
+      .catch((error) => {
+        alert(error.message);
+      })
+      .then((success) => alert(success));
+  };
+
   const resultsTableBtn = (props) => {
     setClientRegistrationFacility(props.record.registration_facility);
     return (
@@ -140,6 +335,7 @@ const Search = () => {
         <ButtonGroup className="btn-sm">
           <Button
             onClick={() => {
+              openModalUpdate();
               setClientUuid(props.record.client_uuid);
               setClientFirstName(props.record.first_name);
               setClientLastName(props.record.surname);

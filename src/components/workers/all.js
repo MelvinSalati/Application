@@ -201,7 +201,7 @@ const ShowAll = () => {
                   setUPass(e.target.value);
                 }}
                 placeholder="Password"
-                autocomplete="off"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -291,6 +291,7 @@ const ShowAll = () => {
                   <option value="1">Clinician</option>
                   <option value="2">Monitoring and Evaluation</option>
                   <option value="3">Community Health Worker (CHW)</option>
+                  <option value="3">Baby Mother Mentors</option>
                 </optgroup>
               </select>
             </div>
@@ -311,6 +312,7 @@ const ShowAll = () => {
                 onChange={(e) => {
                   setPassword(e.target.value);
                 }}
+                value=""
                 placeholder="Password"
               />
             </div>

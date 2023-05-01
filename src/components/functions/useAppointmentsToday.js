@@ -1,22 +1,34 @@
-import React from 'react'
-import axios from '../../requestHandler'
-import { useEffect } from 'react'
+import React from "react";
+import axios from "../../requestHandler";
+import { useEffect } from "react";
+import Notiflix from "notiflix";
 
 const useMissedAppointments = (appointmentDate) => {
-  const [appointments, setAppointments] = React.useState([])
-  const hmis = sessionStorage.getItem('hmis')
+  // Notiflix.Loading.circle("Loading");
+  const [appointments, setAppointments] = React.useState([]);
+  const hmis = sessionStorage.getItem("hmis");
+  const departmentID = sessionStorage.getItem("department");
   useEffect(() => {
     async function getAppointments() {
-      const request = await axios.get(
-        `api/v1/facility/appointment/list/${appointmentDate}/${hmis}`,
-      )
-      setAppointments(request.data.list)
+      if (sessionStorage.getItem("department") === "1") {
+        const request = await axios.get(
+          `api/v1/facility/appointment/list/${appointmentDate}/${hmis}/${departmentID}`
+        );
+        setAppointments(request.data.list);
+      } else if (sessionStorage.getItem("department") === "2") {
+        const request = await axios.get(
+          `api/v1/facility/appointment/emtct/${appointmentDate}/${hmis}/${departmentID}`
+        );
+        setAppointments(request.data.list);
+      }
+
+      Notiflix.Loading.remove();
     }
 
     //get the list of appointments
-    getAppointments()
-  }, [appointmentDate])
+    getAppointments();
+  }, [appointmentDate]);
 
-  return [appointments]
-}
-export default useMissedAppointments
+  return [appointments];
+};
+export default useMissedAppointments;

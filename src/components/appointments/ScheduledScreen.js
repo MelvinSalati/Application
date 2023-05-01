@@ -15,14 +15,14 @@ import AppointmentForm from "../Forms/appointment";
 import React from "react";
 import Swal from "sweetalert2";
 import API_REQUEST from "../../requestHandler";
-const Scheduled = () => {
-  const [appointmentTypes, setAppointmentTypes] = useAppointment();
+import NavbarScreen from "../navbar/navbar";
+import Notiflix from "notiflix";
+import history from "../../history";
+const ScheduledScreen = () => {
+  const [appointmentTypes] = useAppointment();
   const [appointmentModal, setAppointmentModal] = React.useState(false);
-  const [clinicians, setClinicians] = useClinicians();
-  const [community, setCommunity] = useCommunity();
-  // const [key, setKey] = React.useState("facility");
-  // const [firstName, setFirstName] = React.useState(props.fname);
-  // const [lastName, setLastName] = React.useState(props.lname);
+  const [clinicians] = useClinicians();
+  const [community] = useCommunity();
   const [appointmentType, setAppointmentType] = React.useState("empty");
   const [timeBooked, setTimeBooked] = React.useState("empty");
   const [dateBooked, setDateBooked] = React.useState("empty");
@@ -30,22 +30,32 @@ const Scheduled = () => {
   const [communityAssigned, setCommunityAssigned] = React.useState("empty");
   const [updateContact, setUpdateContact] = React.useState("empty");
   const [comments, setComments] = React.useState("empty");
-  const [appointmentCreatedSuccessfully, setAppointmentCreatedSuccessfully] =
-    React.useState(false);
   const [key, setKey] = React.useState("expected");
-  const [createdToday, setCreatedToday] = useCreated();
+  const [createdToday] = useCreated();
   const [appointmentDate, setAppointmentDate] = React.useState("null");
-  const [appointments, setAppointments] = useAppointmentsToday(appointmentDate);
-  const [appointmentForm, setAppointmentForm] = React.useState(false);
+  const [appointments] = useAppointmentsToday(appointmentDate);
+  const [appointmentForm] = React.useState(false);
   const [firstName, setFirstName] = React.useState();
   const [lastName, setLastName] = React.useState();
   const [uuid, setUuid] = React.useState();
   const [nupn, setNupn] = React.useState();
+  const openClientsProfile = (uuid) => {
+    history.push({
+      pathname: "client/profile",
+      state: {
+        details: {
+          Uuid: uuid,
+        },
+      },
+    });
+  };
   //create
   const appointmentHandler = async () => {
     const hmis = sessionStorage.getItem("hmis");
     const request = await API_REQUEST.get(
-      `/api/v1/create/appointment/${uuid}/${appointmentType}/${timeBooked}/${dateBooked}/${clinicianAssigned}/${communityAssigned}/${comments}/${updateContact}/${hmis}`
+      `/api/v1/create/appointment/${uuid}/${appointmentType}/${timeBooked}/${dateBooked}/${clinicianAssigned}/${communityAssigned}/${comments}/${updateContact}/${hmis}/${sessionStorage.getItem(
+        "department"
+      )}`
     );
     // addItems();
     if (request.data.status === 200) {
@@ -74,7 +84,7 @@ const Scheduled = () => {
 
   //
   const removeItem = () => {
-    var ind = appointments.findIndex(function (element) {
+    var ind = appointments.findIndex(function(element) {
       return element.uuid === uuid;
     });
     if (ind !== -1) {
@@ -158,30 +168,40 @@ const Scheduled = () => {
   const CreateButton = (props) => {
     return (
       <>
-        <Button
-          variant="outline-primary"
-          className="btn-sm "
-          onClick={() => {
-            setAppointmentModal(true);
-            setFirstName(props.record.First_Name);
-            setLastName(props.record.Last_Name);
-            setUuid(props.record.uuid);
-            setNupn(props.record.Unique_ID);
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="currentColor"
-            className="text-primary bi bi-plus-circle-fill"
-            viewBox="0 0 16 16"
+        {sessionStorage.getItem("department") === "2" ? (
+          <Button
+            onClick={() => {
+              openClientsProfile(props.record.uuid);
+            }}
           >
-            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z" />
-          </svg>
-          {"  "}
-          Book Appointment
-        </Button>
+            Book Appointment
+          </Button>
+        ) : (
+          <Button
+            variant="outline-primary"
+            className="btn-sm "
+            onClick={() => {
+              setAppointmentModal(true);
+              setFirstName(props.record.First_Name);
+              setLastName(props.record.Last_Name);
+              setUuid(props.record.uuid);
+              setNupn(props.record.Unique_ID);
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              className="text-primary bi bi-plus-circle-fill"
+              viewBox="0 0 16 16"
+            >
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z" />
+            </svg>
+            {"  "}
+            Book Appointment
+          </Button>
+        )}
       </>
     );
   };
@@ -248,7 +268,11 @@ const Scheduled = () => {
 
   return (
     <>
-      <Container>
+      <NavbarScreen />
+      <Container
+        className="bg-white container content"
+        style={{ marginTop: "4%" }}
+      >
         <h5 className="h5 component">
           {" "}
           <svg
@@ -308,20 +332,6 @@ const Scheduled = () => {
                 style={{ width: "280px", Padding: "10px" }}
                 className="float-end form-control-sm"
               />
-              {/* <Button className="btn-sm float-end">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  fill="currentColor"
-                  className="text-white bi bi-printer-fill"
-                  viewBox="0 0 16 16"
-                >
-                  <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z" />
-                  <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z" />
-                </svg>{" "}
-                Print List
-              </Button> */}
             </h5>
             <FilterableTable
               data={appointments}
@@ -338,7 +348,13 @@ const Scheduled = () => {
               status={appointmentForm}
             />
           </Tab>
-          <Tab title="Appointments Created Today" eventKey="today">
+          <Tab
+            title="Appointments Created Today"
+            eventKey="today"
+            onClick={() => {
+              Notiflix.Loading.remove();
+            }}
+          >
             <h5 className="component h6" style={{ fontSize: "bold" }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -518,4 +534,4 @@ const Scheduled = () => {
   );
 };
 
-export default Scheduled;
+export default ScheduledScreen;

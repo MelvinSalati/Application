@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import axios from "../../requestHandler";
-
+import Notiflix from "notiflix";
 const useCreated = () => {
   const [createdList, setCreatedList] = React.useState([]);
   const hmis = sessionStorage.getItem("hmis");
@@ -10,6 +10,7 @@ const useCreated = () => {
       setCreatedList(request.data.list);
     }
     createdToday();
+    Notiflix.Loading.remove();
   }, []);
   return [createdList];
 };

@@ -133,6 +133,201 @@ const Search = () => {
   const [isSearchingFingerPrint, setIsSearchingFingerPrint] =
     React.useState(false);
 
+  const [emtctEnrolled, setEmtctEnrolled] = React.useState("...");
+  const isEnrolled = async () => {
+    await axios.get(`api/v1/emtct/enroll/${clientUuid}`).then((response) => {
+      setEmtctEnrolled(!response.data.status);
+      console.log(response.data.status);
+    });
+  };
+  const CaptureBiometricFinger = async () => {
+    const request = await axios.post(
+      "http://localhost:15896/api/CloudScanr/FPCapture",
+      {
+        CustomerKey: "1848CF9353844080B58154394CA960A6",
+        CaptureType: "SingleCapture",
+        CaptureMode: "TemplateOnly",
+        QuickScan: false,
+      }
+    );
+
+    const CapturedBiometrics = request.data;
+    setCapturedBiometricData(CapturedBiometrics.TemplateData);
+    setMessageResponse(CapturedBiometrics.CloudScanrStatus.Message);
+    if (CapturedBiometrics.CloudScanrStatus.Success === false) {
+      return false;
+    }
+  };
+  const acceptTransfer = async () => {
+    await axios
+      .patch("/api/v1/client/transfer/accept/", {
+        uuid: clientUuid,
+        hmis: hmis,
+      })
+      .then((response) => {
+        if (response.data.transfer.status === 202) {
+          toast.warn(response.data.message);
+          setIsTransfered(false);
+        } else if (response.data.transfer.status === 200) {
+          toast.success(response.data.transfer.message);
+          setIsTransfered(false);
+        }
+      })
+      .catch((error) => {
+        toast.warn(error.message);
+      });
+  };
+  useEffect(() => {
+    if (capturedBiometricData === "false") {
+      return false;
+    } else {
+      const IdentifyFingerPrint = async () => {
+        setIsSearchingFingerPrint(true);
+
+        const request = await processBiometric.post("api/Biometric/Identify", {
+          CustomerKey: "1848CF9353844080B58154394CA960A6",
+          EngineName: "FPFF02",
+          Format: "ISO",
+          CaptureOperationName: "IDENTIFY",
+          QuickScan: true,
+          BiometricXml: capturedBiometricData,
+          AppKey: "b0a1b0359bbe485fa7d7869ee8a7d5ab",
+          SecretKey: "VNEP7lBLhYkvc5ES3loiEE/Fqs4=",
+        });
+
+        setBiometricResults(request.data.DetailResult[0]);
+
+        if (request.data.OperationResult === "INVALID_TEMPLATE") {
+          Swal.fire({
+            icon: "error",
+            text: request.data.OperationResult,
+          });
+          setProcessMsg(false);
+
+          setMessageResponse(false);
+          setIsSearchingFingerPrint(false);
+        } else if (request.data.OperationResult === "NO_MATCH_FOUND") {
+          Swal.fire({
+            icon: "error",
+            text: request.data.OperationResult,
+          });
+
+          setMessageResponse(false);
+          setIsSearchingFingerPrint(false);
+          setProcessMsg(false);
+        } else if (request.data.OperationResult === "MATCH_FOUND") {
+          setMessageResponse("Processing Biometric information...");
+          setId(request.data.DetailResult[0].ID);
+          setIsSearchingFingerPrint(true);
+
+          searchHandler();
+          // alert(id);
+        } else {
+          alert(request.data.OperationResult);
+        }
+      };
+      IdentifyFingerPrint();
+    }
+
+    // if (capturedBiometricData.length) {
+    //   setProcessMsg(false);
+    // }
+  }, [capturedBiometricData, id]);
+  // Search results found
+  const [updateRecordModal, setUpdateRecordModal] = React.useState(false);
+
+  // open update modal
+  const openModalUpdate = () => {
+    setUpdateRecordModal(true);
+  };
+
+  // mother infant appointments
+
+  const [visitDate, setVisitDate] = React.useState(new Date());
+  const [nextAppointmentDate, setNextAppointmentDate] = React.useState();
+  const [mDrupPickUp, setMDrugPickUp] = React.useState(false);
+  const [mViralLoadColletion, setMViralLoadColletion] = React.useState(false);
+  const [mClinicalReview, setMClinicalReview] = React.useState(false);
+  const [pVLSYes, setPVLSYes] = React.useState(false);
+  const [pVLSNo, setPVLSNo] = React.useState(false);
+  const [childsNumber, setChildsNumber] = React.useState("");
+  const [infantCat, setInfantCat] = React.useState(0);
+  const [infantST, setInfantST] = React.useState(false);
+  const [infantDBS, setInfantDBS] = useState(false);
+  const [infantCTX, setInfantCTX] = useState(false);
+  const [infantARVP, setInfantARVP] = useState(false);
+  const [infantARVT, setInafntARVT] = useState(false);
+
+  const visiteDateHandler = (e) => {
+    setVisitDate(e.target.value);
+  };
+  const nextAppointmentDateHandler = (e) => {
+    setNextAppointmentDate(e.target.value);
+  };
+  const mDrugPickUpHandler = (e) => {
+    setMDrugPickUp(e.target.checked);
+  };
+  const mViralLoadCollectionHandler = (e) => {
+    setMViralLoadColletion(e.target.checked);
+  };
+  const mClinicalReviewHandler = (e) => {
+    setMClinicalReview(e.target.checked);
+  };
+  const pVLSYesHandler = (e) => {
+    setPVLSYes(e.target.checked);
+  };
+  const pVLSNoHandler = (e) => {
+    setPVLSNo(e.target.checked);
+  };
+  // infant
+  const childNumberHandler = (e) => {
+    setChildsNumber(e.target.value);
+  };
+  const infantCatHandler = (e) => {
+    setInfantCat(e.target.value);
+  };
+  const infantSThandler = (e) => {
+    setInfantST(e.target.checked);
+  };
+  const infantDBSHandler = (e) => {
+    setInfantDBS(e.target.checked);
+  };
+  const infantCTXHandler = (e) => {
+    setInfantCTX(e.target.checked);
+  };
+  const infantARVPHandler = (e) => {
+    setInfantARVP(e.target.checked);
+  };
+  const infantARVTHandler = (e) => {
+    setInafntARVT(e.target.checked);
+  };
+
+  const createPairAppointment = async (e) => {
+    const params = {
+      vd: visitDate,
+      nd: nextAppointmentDate,
+      pp: mDrupPickUp,
+      cv: mClinicalReview,
+      mv: mViralLoadColletion,
+      pvY: pVLSYes,
+      pvN: pVLSNo,
+      ist: infantST,
+      idb: infantDBS,
+      icx: infantCTX,
+      iap: infantARVP,
+      iav: infantARVT,
+      icat: infantCat,
+      childsNumber: childsNumber,
+      muid: clientUuid,
+    };
+    await axios
+      .post("api/emtct/babymotherpair/create", params)
+      .catch((error) => {
+        alert(error.message);
+      })
+      .then((success) => alert(success));
+  };
+
   const resultsTableBtn = (props) => {
     setClientRegistrationFacility(props.record.registration_facility);
     return (
@@ -140,6 +335,7 @@ const Search = () => {
         <ButtonGroup className="btn-sm">
           <Button
             onClick={() => {
+              openModalUpdate();
               setClientUuid(props.record.client_uuid);
               setClientFirstName(props.record.first_name);
               setClientLastName(props.record.surname);
@@ -762,37 +958,6 @@ const Search = () => {
   const [clinicianPhone, setClinicianPhone] = React.useState("");
   // const [facility, setFacility] = React.useState("");
 
-  const btnTransfer = async () => {
-    const hmis = sessionStorage.getItem("hmis");
-    await axios
-      .post("api/v1/facility/client/transfer", {
-        hmis: hmis,
-        art: art,
-        nupn: nupn,
-        clientfn: clientFirstName,
-        clientln: clientLastName,
-        clinician: clinicianTransfer,
-        title: title,
-        clinicianphone: clinicianPhone,
-        facility: facilityTransfer,
-        uuid: clientUuid,
-        date_of_birth: clientDob,
-        sex: clientSex,
-        nameFacility: sessionStorage.getItem("name"),
-      })
-      .then((response) => {
-        if (response.data.status === 200) {
-          toast.success(response.data.message);
-          setTransferModal(false);
-        } else if (response.data.status === 401) {
-          toast.warn(response.data.message);
-          setTransferModal(false);
-        }
-      })
-      .catch((error) => {
-        toast.success(error.message);
-      });
-  };
   // baby data
   useEffect(
     (babyID) => {
@@ -869,27 +1034,6 @@ const Search = () => {
     getStatus();
   }, [clientUuid]);
 
-  // Transfer
-  useEffect(() => {
-    async function District() {
-      const request = await axios.get(
-        `api/v1/facility/district/${selectProvince}`
-      );
-      setDistrict(request.data.districts);
-      setSelectDistrict(true);
-    }
-    District();
-  }, [selectProvince]);
-
-  useEffect(() => {
-    async function facility() {
-      const request = await axios.get(
-        `api/v1/facility/facility/${selectDistrict}`
-      );
-      setFacility(request.data.facilities);
-    }
-    facility();
-  }, [selectDistrict]);
   const contactStatus = (props) => {
     return (
       <>
@@ -1007,33 +1151,6 @@ const Search = () => {
     },
   ];
 
-  // client appointments table
-  const clientsTableFields = [
-    {
-      name: "sn",
-      displayName: "Sn",
-    },
-    {
-      name: "appointment_type",
-      displayName: "Appointment Type",
-    },
-    {
-      name: "due_date",
-      displayName: "Next Appointment",
-    },
-    {
-      name: "time_booked",
-      displayName: "Time Booked",
-    },
-    {
-      name: "created_at",
-      displayName: "Created At",
-    },
-    {
-      name: "status",
-      displayName: "Status",
-    },
-  ];
   // trackingFiedls
 
   //new client
@@ -1206,18 +1323,556 @@ const Search = () => {
       {/* Show search results  */}
       {results ? (
         <>
-          <FilterableTable
-            data={results}
-            fields={searchTableFields}
-            topPagerVisible={false}
-            pagersVisble={false}
-            pageSizes={false}
-            pageSize={6}
-            className="table table-striped"
-          />
+          {" "}
+          {/* selected client*/}
+          {selectedClient ? (
+            <>
+              <div className="row">
+                <div className="col-md-12">
+                  {!emtctEnrolled ? (
+                    <>....</>
+                  ) : (
+                    <>
+                      <Alert
+                        variant="info"
+                        style={{
+                          width: "inherit",
+                          margin: "auto",
+                          marginBottom: 20,
+                          fontFamily: "Roboto",
+                          fontSize: "14px",
+                        }}
+                      >
+                        <strong>Emtct Active</strong>
+                        <p>
+                          Mother is enrolled in EMTCT program.
+                          <strong>{sessionStorage.getItem("name")}</strong>
+                        </p>
+                      </Alert>
+                    </>
+                  )}
+                  {isTransfered ? (
+                    <>
+                      {" "}
+                      {/* <Alert
+                        variant="info"
+                        style={{
+                          width: "inherit",
+                          margin: "auto",
+                          marginBottom: 20,
+                          fontFamily: "Roboto",
+                          fontSize: "14px",
+                        }}
+                      >
+                        <strong>Pending transfer</strong>
+                        <p>
+                          The recipient of care has an active pending transfer.
+                          Please click the accept button if he/she wishes to
+                          access treatment from{" "}
+                          <strong>{sessionStorage.getItem("name")}</strong>
+                        </p>
+
+                        <Button
+                          variant="success"
+                          onClick={() => {
+                            acceptTransfer();
+                            setIsTransfered(false);
+                          }}
+                        >
+                          Accept
+                        </Button>
+                      </Alert> */}
+                    </>
+                  ) : (
+                    <></>
+                  )}
+                </div>
+                <div className="col-md-4">
+                  <div className="media">
+                    <div className="image">
+                      <Avatar
+                        round={true}
+                        name={clientFirstName + " " + clientLastName}
+                        size={64}
+                      />{" "}
+                    </div>
+                    <div className="media-text">
+                      <p>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          className="bi bi-person-lines-fill"
+                          viewBox="0 0 16 16"
+                        >
+                          <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z" />
+                        </svg>{" "}
+                        {clientFirstName}
+                        {"  "}
+                        {clientLastName}
+                        <br />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          className="bi bi-telephone-fill"
+                          viewBox="0 0 16 16"
+                        >
+                          <path d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z" />
+                        </svg>
+                        {clientPhone}
+                        <br />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          className="bi bi-bookmark-fill"
+                          viewBox="0 0 16 16"
+                        >
+                          <path d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+                        </svg>
+                        {clientDob}{" "}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-4 border-left">
+                  <h6>GPS Cordinates</h6>
+                  <p className="text-roboto">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      className="bi bi-geo-fill"
+                      viewBox="0 0 16 16"
+                    >
+                      <path d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.319 1.319 0 0 0-.37.265.301.301 0 0 0-.057.09V14l.002.008a.147.147 0 0 0 .016.033.617.617 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.619.619 0 0 0 .146-.15.148.148 0 0 0 .015-.033L12 14v-.004a.301.301 0 0 0-.057-.09 1.318 1.318 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465-1.281 0-2.462-.172-3.34-.465-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411z" />
+                    </svg>{" "}
+                    Latitude : --------
+                    <br />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      className="bi bi-geo-fill"
+                      viewBox="0 0 16 16"
+                    >
+                      <path d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.319 1.319 0 0 0-.37.265.301.301 0 0 0-.057.09V14l.002.008a.147.147 0 0 0 .016.033.617.617 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.619.619 0 0 0 .146-.15.148.148 0 0 0 .015-.033L12 14v-.004a.301.301 0 0 0-.057-.09 1.318 1.318 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465-1.281 0-2.462-.172-3.34-.465-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411z" />
+                    </svg>
+                    Longitude : --------
+                  </p>
+                </div>
+                <div className="col-md-4">
+                  <ButtonGroup className="btn-sm float-end">
+                    {/* <Button>Exit</Button> */}
+                    <Button
+                      onClick={() => {
+                        setSelectedClient(false);
+                      }}
+                      variant="outline-primary"
+                      className="btn-sm"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        fill="currentColor"
+                        className="text-primary bi bi-arrow-left-circle-fill"
+                        viewBox="0 0 16 16"
+                      >
+                        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z" />
+                      </svg>{" "}
+                      Back
+                    </Button>
+                    {remoteFile ? (
+                      <>
+                        <Button disabled={true} className="btn-sm btn-block">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            fill="currentColor"
+                            className="text-white bi bi-truck"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+                          </svg>
+                          {"   "}
+                          Transfer
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => {
+                            setTransferModal(true);
+                          }}
+                          className="btn-sm btn-block"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            fill="currentColor"
+                            className="text-white bi bi-truck"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+                          </svg>
+                          {"   "}
+                          Transfer
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      onClick={() => {
+                        downloadCardHandler();
+                      }}
+                      className="btn-sm"
+                      variant="outline-primary"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        fill="currentColor"
+                        className="text-primary bi bi-cloud-download-fill"
+                        viewBox="0 0 16 16"
+                      >
+                        <path d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0zm-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z" />
+                      </svg>
+                      {"  "}
+                      Get Card
+                    </Button>
+                  </ButtonGroup>
+                </div>
+                <div className="col-md-12">
+                  <Tabs>
+                    <Tab title="Manage Biometric Data" eventKey="biodata">
+                      <BiometricData data={nupn} />
+                    </Tab>
+                    <Tab
+                      title="Active Appointments"
+                      eventKey="app"
+                      disabled={
+                        localStorage.getItem("departmentID") === "2"
+                          ? true
+                          : false
+                      }
+                    >
+                      <br />
+                      <Container style={{ position: "relative" }}>
+                        <h5>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="22"
+                            height="22"
+                            fill="currentColor"
+                            className="text-primary bi bi-list-task"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5H2zM3 3H2v1h1V3z" />
+                            <path d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9z" />
+                            <path d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V7zM2 7h1v1H2V7zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H2zm1 .5H2v1h1v-1z" />
+                          </svg>{" "}
+                          {"  "}
+                          Appointment List
+                          <Button
+                            variant="primary"
+                            className="btn-sm float-end"
+                            style={{ borderRadius: "25px" }}
+                            onClick={() => {
+                              setAppointmentModal(true);
+                            }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              fill="currentColor"
+                              className="text-white bi bi-plus-circle"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                            </svg>
+                            {"   "}
+                            Book Appointment
+                          </Button>
+                        </h5>
+                        <hr />
+                        <FilterableTable
+                          data={appointments}
+                          fields={clientsTableFields}
+                          topPagerVisible={false}
+                          pageSize={6}
+                          pageSizes={false}
+                        />
+                      </Container>
+                    </Tab>
+                    <Tab title="Tracking Activities" eventKey="track">
+                      <Container>
+                        <br />
+                        <h5>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="22"
+                            height="22"
+                            fill="currentColor"
+                            className="text-primary bi bi-list-task"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5H2zM3 3H2v1h1V3z" />
+                            <path d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9z" />
+                            <path d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V7zM2 7h1v1H2V7zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H2zm1 .5H2v1h1v-1z" />
+                          </svg>{" "}
+                          {"  "}
+                          Tracking List
+                          <Button
+                            variant="outline-primary"
+                            className="float-end border-0"
+                          >
+                            {" "}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              fill="currentColor"
+                              className="text-primary bi bi-signpost-2-fill"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M7.293.707A1 1 0 0 0 7 1.414V2H2a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h5v1H2.5a1 1 0 0 0-.8.4L.725 8.7a.5.5 0 0 0 0 .6l.975 1.3a1 1 0 0 0 .8.4H7v5h2v-5h5a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H9V6h4.5a1 1 0 0 0 .8-.4l.975-1.3a.5.5 0 0 0 0-.6L14.3 2.4a1 1 0 0 0-.8-.4H9v-.586A1 1 0 0 0 7.293.707z" />
+                            </svg>
+                            {"    "}
+                            Track Client
+                          </Button>
+                        </h5>
+                        <hr />
+                        <FilterableTable
+                          data={missedAppointments}
+                          // fields={trackingFields}
+                          topPagerVisible={false}
+                          pageSize={6}
+                          pageSizes={false}
+                        />
+                        <br />
+                      </Container>
+                    </Tab>
+                    <Tab title="Manage Emtct" eventKey="emtct">
+                      <Container>
+                        <br />
+                        <h5>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            fill="currentColor"
+                            className="text-primary bi bi-cpu-fill"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z" />
+                            <path d="M5.5.5a.5.5 0 0 0-1 0V2A2.5 2.5 0 0 0 2 4.5H.5a.5.5 0 0 0 0 1H2v1H.5a.5.5 0 0 0 0 1H2v1H.5a.5.5 0 0 0 0 1H2v1H.5a.5.5 0 0 0 0 1H2A2.5 2.5 0 0 0 4.5 14v1.5a.5.5 0 0 0 1 0V14h1v1.5a.5.5 0 0 0 1 0V14h1v1.5a.5.5 0 0 0 1 0V14h1v1.5a.5.5 0 0 0 1 0V14a2.5 2.5 0 0 0 2.5-2.5h1.5a.5.5 0 0 0 0-1H14v-1h1.5a.5.5 0 0 0 0-1H14v-1h1.5a.5.5 0 0 0 0-1H14v-1h1.5a.5.5 0 0 0 0-1H14A2.5 2.5 0 0 0 11.5 2V.5a.5.5 0 0 0-1 0V2h-1V.5a.5.5 0 0 0-1 0V2h-1V.5a.5.5 0 0 0-1 0V2h-1V.5zm1 4.5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5v-3A1.5 1.5 0 0 1 6.5 5z" />
+                          </svg>{" "}
+                          {"  "}
+                          Mother Infant Pair Management
+                          <ButtonGroup className="float-end border-0">
+                            <Button
+                              onClick={() => {
+                                setAddBabyModal(true);
+                              }}
+                              variant="primary"
+                              className="btn-sm float-end border-0"
+                              style={{ borderRadius: "0px" }}
+                            >
+                              {" "}
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                fill="currentColor"
+                                className="text-white bi bi-plus-circle"
+                                viewBox="0 0 16 16"
+                              >
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                              </svg>
+                              {"    "}
+                              Add Baby
+                            </Button>
+                            {babies.length > 0 ? (
+                              <></>
+                            ) : (
+                              <>
+                                {" "}
+                                <Button
+                                  variant="outline-primary"
+                                  onClick={() => {
+                                    setAppointmentModal(true);
+                                  }}
+                                >
+                                  Book Appointment
+                                </Button>
+                              </>
+                            )}
+
+                            {!emtctEnrolled ? (
+                              <>
+                                {" "}
+                                <Button
+                                  variant="outline-primary"
+                                  // disabled={emtctEnrolled ? true : false}
+                                  onClick={() => {
+                                    setInEmtctModal(true);
+                                  }}
+                                >
+                                  Enroll Mother
+                                </Button>
+                              </>
+                            ) : (
+                              <></>
+                            )}
+                          </ButtonGroup>
+                        </h5>
+                        <hr />
+                        <FilterableTable
+                          data={babies}
+                          fields={emtctFields}
+                          topPagerVisible={false}
+                          pageSize={6}
+                          pageSizes={false}
+                        />
+                      </Container>
+                    </Tab>
+                    <Tab title="Address Book" eventKey="contacts">
+                      <Container>
+                        <br />
+                        <h5 className="text-muted">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            fill="currentColor"
+                            className="bi bi-journal-plus"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M8 5.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V10a.5.5 0 0 1-1 0V8.5H6a.5.5 0 0 1 0-1h1.5V6a.5.5 0 0 1 .5-.5z" />
+                            <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2z" />
+                            <path d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1z" />
+                          </svg>
+                          {"  "}
+                          Contact List
+                          <Button
+                            onClick={() => {
+                              setContactModal(true);
+                            }}
+                            className="float-end btn-sm"
+                            style={{ borderRadius: "25px" }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              fill="currentColor"
+                              className="text-white bi bi-plus-circle"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                            </svg>
+                            {"  "}
+                            Add Contact
+                          </Button>
+                        </h5>
+                        <hr />
+                        <FilterableTable
+                          data={viewContacts}
+                          fields={contactFields}
+                          topPagerVisible={false}
+                          pageSize={6}
+                          pageSizes={false}
+                        />
+                      </Container>
+                    </Tab>
+                    <Tab title="Mortality" eventKey="mortality">
+                      <Container>
+                        <br />
+                        <h5 className="text-muted">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            fill="currentColor"
+                            className="bi bi-journal-plus"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M8 5.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V10a.5.5 0 0 1-1 0V8.5H6a.5.5 0 0 1 0-1h1.5V6a.5.5 0 0 1 .5-.5z" />
+                            <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2z" />
+                            <path d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1z" />
+                          </svg>
+                          {"  "}
+                          Status
+                          <Button
+                            onClick={() => {
+                              setDeathModal(true);
+                            }}
+                            className="float-end btn-sm"
+                            style={{ borderRadius: "25px" }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              fill="currentColor"
+                              className="text-white bi bi-plus-circle"
+                              viewBox="0 0 16 16"
+                            >
+                              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                            </svg>
+                            {"  "}
+                            Report Death
+                          </Button>
+                        </h5>
+                        <hr />
+                        <FilterableTable
+                          data={viewDeaths}
+                          topPagerVisible={false}
+                          pageSize={6}
+                          pageSizes={false}
+                        />
+                      </Container>
+                    </Tab>
+                    {/* <Tab eventKey="docs" title="Documents">
+                      <h5 className="component">Download Files</h5>
+                      <Documents />
+                    </Tab> */}
+                  </Tabs>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {" "}
+              <FilterableTable
+                data={results}
+                fields={searchTableFields}
+                topPagerVisible={false}
+                pagersVisble={false}
+                pageSizes={false}
+                pageSize={6}
+                className="table table-striped"
+              />
+            </>
+          )}{" "}
         </>
       ) : (
         <>
+          {" "}
           {/* Show search tabs */}
           <Tabs
             onSelect={(k) => {
@@ -2657,140 +3312,7 @@ const Search = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-      {/* Modal transfer */}
-      <Modal
-        show={transferModal}
-        dialogClassName="modal-lg"
-        onHide={() => {
-          setTransferModal(false);
-        }}
-      >
-        <Modal.Header style={{ fontFamily: "Roboto" }} closeButton>
-          <h5 className="text-muted">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="26"
-              height="26"
-              fill="currentColor"
-              className="text-primary bi bi-plus-circle"
-              viewBox="0 0 16 16"
-            >
-              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
-            </svg>
-            {"  "}
-            Transfer client to another institution
-          </h5>
-        </Modal.Header>
-        <Modal.Body className="bg-light">
-          <div className="row">
-            <div className="col-md-12">
-              <label>Clinician</label>
-              <FormControl
-                onChange={(e) => {
-                  setClinicianTransfer(e.target.value);
-                }}
-                type="text"
-                placeholder="Clinician transfering"
-              />
-              <br />
-            </div>
-            <div className="col-md-6">
-              <label>Title </label>
-              <FormControl
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                }}
-                type="text"
-                placeholder="Title"
-              />
-              <br />
-            </div>
-            <div className="col-md-6">
-              <label>Clinician's Mobile Phone </label>
-              <FormControl
-                onChange={(e) => {
-                  setClinicianPhone(e.target.value);
-                }}
-                type="text"
-                placeholder="Phone number"
-              />
-              <br />
-            </div>
-            <div className="col-md-6">
-              <label>Province</label>
-              <select
-                onChange={(e) => {
-                  setSelectProvince(e.target.value);
-                }}
-                className="form-control"
-              >
-                <optgroup label="Provinces">
-                  <option>Select Province</option>
-                  {province.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.province}
-                    </option>
-                  ))}{" "}
-                </optgroup>
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label>District</label>
-              {selectDistrict ? (
-                <>
-                  <select
-                    onChange={(e) => setSelectDistrict(e.target.value)}
-                    className="form-control"
-                  >
-                    <option>Select district</option>
-                    {district.map((row) => (
-                      <option key={row.id} value={row.id}>
-                        {row.district}
-                      </option>
-                    ))}{" "}
-                  </select>
-                </>
-              ) : (
-                <>
-                  <select className="form-control" disabled>
-                    <optgroup>
-                      <option>Select district</option>
-                    </optgroup>
-                  </select>
-                </>
-              )}{" "}
-            </div>
-            <div className="col-md-12">
-              <label>Facility</label>
-              <select
-                onChange={(e) => {
-                  setFacilityTransfer(e.target.value);
-                }}
-                className="form-control"
-              >
-                <optgroup label="Health Facilities">
-                  <option>Select Facility</option>
-                  {facility.map((row) => (
-                    <option key={row.id} value={row.hmis_code}>
-                      {row.facility_name}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            onClick={() => {
-              btnTransfer();
-            }}
-          >
-            Submit
-          </Button>
-        </Modal.Footer>
-      </Modal>
+
       {/* add client */}
 
       <Modal
@@ -2995,6 +3517,17 @@ const Search = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       {/* Search by phone */}
       <Modal show={showVerificationForm}>
         <Modal.Body>
