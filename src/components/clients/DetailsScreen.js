@@ -92,7 +92,7 @@ export default function DetailsScreen(props) {
       setDistrict(request.data.districts);
       setSelectDistrict(true);
     }
-    // District();
+    District();
   }, [selectProvince]);
 
   //select facility
@@ -103,7 +103,7 @@ export default function DetailsScreen(props) {
       );
       setFacility(request.data.facilities);
     }
-    // facility();
+    facility();
   }, [selectDistrict]);
 
   const btnTransfer = async () => {

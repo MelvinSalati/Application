@@ -55,6 +55,7 @@ const Authentication = () => {
     } else if (request.data.status === 401) {
       Notify.warning(request.data.message);
       setButtonState(false);
+      Notiflix.Loading.remove();
     }
   };
 

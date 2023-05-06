@@ -17,6 +17,7 @@ import Swal from "sweetalert2";
 import API_REQUEST from "../../requestHandler";
 import NavbarScreen from "../navbar/navbar";
 import Notiflix from "notiflix";
+import { Notify } from "notiflix/build/notiflix-notify-aio";
 import history from "../../history";
 const ScheduledScreen = () => {
   const [appointmentTypes] = useAppointment();
@@ -50,34 +51,31 @@ const ScheduledScreen = () => {
     });
   };
   //create
+  const appointmentDetails = {
+    uuid: uuid,
+    appointment: appointmentType,
+    time: timeBooked,
+    date: dateBooked,
+    clinician: clinicianAssigned,
+    community: communityAssigned,
+    comment: comments,
+    contact: updateContact,
+    code: sessionStorage.getItem("hmis"),
+    department: sessionStorage.getItem("department"),
+  };
   const appointmentHandler = async () => {
-    const hmis = sessionStorage.getItem("hmis");
-    const request = await API_REQUEST.get(
-      `/api/v1/create/appointment/${uuid}/${appointmentType}/${timeBooked}/${dateBooked}/${clinicianAssigned}/${communityAssigned}/${comments}/${updateContact}/${hmis}/${sessionStorage.getItem(
-        "department"
-      )}`
+    const request = await API_REQUEST.post(
+      `/api/v1/create/appointment`,
+      appointmentDetails
     );
     // addItems();
     if (request.data.status === 200) {
-      Swal.fire({
-        title: "Success",
-        text: request.data.message,
-        icon: "success",
-        confirmButtonText: "Exit",
-        confirmButtonColor: "#007bbf",
-      });
-
+      Notify.success("Appointment created successfully !!");
       //remove from list
       removeItem(uuid);
       setAppointmentModal(false);
     } else if (request.data.status === 401) {
-      Swal.fire({
-        title: "Error",
-        text: request.data.message,
-        icon: "error",
-        confirmButtonText: "Exit",
-        confirmButtonColor: "#007bbf",
-      });
+      Notify.warning(request.data.message);
       setAppointmentModal(false);
     }
   };
