@@ -2,7 +2,7 @@
   "name": "umodzi",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://app.v2.smart-umodzi.com",
+  "homepage": "./",
   "dependencies": {
     "@pusher/push-notifications-web": "^1.1.0",
     "@react-hook/cache": "^1.1.1",
