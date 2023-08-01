@@ -1,6 +1,6 @@
 {
-  "short_name": "Umodzi",
-  "name": "Umodzi Appointment System",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "logo.ico",
