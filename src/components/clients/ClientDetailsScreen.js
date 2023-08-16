@@ -437,6 +437,7 @@ export default function ClientDetailsScreen(props) {
         Notify.warning(error.message);
       })
       .then((response) => {
+        setAppointmentModal(false);
         if (response.data.status === 200)
           return Notify.success("Appointment created successfully!");
       });
