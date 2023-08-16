@@ -38,7 +38,7 @@ export default function DetailsScreen(props) {
 
     async function getClientsData() {
       await axios
-        .get(`api/v1/client/details/${props.uuid}`)
+        .get(`api/v1/client/detail/${props.uuid}`)
         .catch((error) => {})
         .then((response) => {
           setClientsData({
@@ -51,7 +51,7 @@ export default function DetailsScreen(props) {
             response.data[0].first_name + "   " + response.data[0].surname
           );
           setClientFirstName(response.data[0].first_name);
-          setClientLastName(response.data[0].last_name);
+          setClientLastName(response.data[0].surname);
           setDOB(response.data[0].date_of_birth);
           setMobilePhone(response.data[0].mobile_phone_number);
           setArtNumber(response.data[0].art_number);

@@ -26,12 +26,12 @@ const PatientLevel = () => {
       if (startD < endD) {
         setReportModal(false);
         window.open(
-          `https://reports.v2.smart-umodzi.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
+          `http://reports.umodzi.digitoinsight.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
         );
       } else if (startD === endD) {
         setReportModal(false);
         window.open(
-          `https://reports.v2.smart-umodzi.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
+          `http://reports.umodzi.digitoinsight.com/report.php?report_id=${reportID}&from=${startDate}&to=${endDate}&hmis=${hmis}`
         );
       } else if (endD > today) {
         Swal.fire({
@@ -106,7 +106,8 @@ const PatientLevel = () => {
       SN: "1",
       title: "Appointment  List",
       cat: "Appointments",
-      desc: "List of recipients of care scheduled to visit the facility within a specified period.",
+      desc:
+        "List of recipients of care scheduled to visit the facility within a specified period.",
     },
     {
       SN: "2",
